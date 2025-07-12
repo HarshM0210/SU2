@@ -1,0 +1,166 @@
+name: Run-Validation_Cases
+
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: "Validation Case Category (Basic/Extended)"
+        required: true
+        type: choice
+        options:
+          - Basic
+          - Extended
+      case_name:
+        description: "Validation Case Name (e.g., 2D Mixing Layer)"
+        required: true
+        type: string
+      case_code:
+        description: "Validation Case Code (e.g., 2DML)"
+        required: true
+        type: string
+      turbulence_model:
+        description: "Turbulence Model (SA/SST)"
+        required: true
+        type: choice
+        options:
+          - SA
+          - SST
+      configuration:
+        description: "Configuration (e.g., Configuration 1)"
+        required: true
+        type: string
+
+jobs:
+  su2-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    env:
+      SU2_VANDV_REPO: https://github.com/HarshM0210/SU2-VandV.git
+      SU2_VANDV_BRANCH: feature_validation_cases
+
+    steps:
+      - name: Checkout SU2 Main Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            libopenmpi-dev \
+            openmpi-bin \
+            swig \
+            libboost-all-dev \
+            libmetis-dev \
+            libparmetis-dev \
+            libhdf5-dev \
+            zlib1g-dev \
+            python3-dev \
+            python3-pip \
+            git \
+            wget \
+            libgl1
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy matplotlib pyvista pandas
+
+      - name: Clone and Build SU2 (without MPI)
+        run: |
+          git clone https://github.com/su2code/SU2.git
+          cd SU2
+          git checkout -b develop origin/develop
+          python meson.py build \
+            -Dwith-mpi=disabled \
+            -Denable-pywrapper=true \
+            --prefix=/usr/local
+          ninja -C build
+          sudo ninja -C build install
+          sudo ldconfig
+          echo "SU2_CFD path: $(which SU2_CFD)"
+          echo "PATH=/usr/local/bin:$PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
+      - name: Verify SU2 installation
+        run: |
+          SU2_CFD --help
+
+      - name: Set Case Path
+        id: set_paths
+        run: |
+          CASE_PATH="ValidationCases/${{ github.event.inputs.category }}/${{ github.event.inputs.case_code }}/${{ github.event.inputs.turbulence_model }}/${{ github.event.inputs.configuration }}"
+          echo "case_path=${CASE_PATH}" >> $GITHUB_OUTPUT
+          echo "CASE_PATH=${CASE_PATH}" >> $GITHUB_ENV
+
+      - name: Clone SU2-VandV Repo
+        uses: actions/checkout@v4
+        with:
+          repository: HarshM0210/SU2-VandV
+          ref: ${{ env.SU2_VANDV_BRANCH }}
+          path: su2-vandv
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy Mesh and Restart Files
+        run: |
+          set -e
+          MAIN_CASE_PATH="${{ env.CASE_PATH }}"
+          VANDV_CASE_PATH="su2-vandv/${{ env.CASE_PATH }}"
+
+          echo "Copying files from ${VANDV_CASE_PATH} to ${MAIN_CASE_PATH}"
+          mkdir -p "${MAIN_CASE_PATH}"
+
+          for mesh_dir in "${VANDV_CASE_PATH}"/*/; do
+            if [ -d "$mesh_dir" ] && [ "$(basename "$mesh_dir")" != "." ] && [ "$(basename "$mesh_dir")" != ".." ]; then
+              mesh_name=$(basename "${mesh_dir}")
+              target_dir="${MAIN_CASE_PATH}/${mesh_name}"
+              mkdir -p "${target_dir}"
+              cp -v "${mesh_dir}"/* "${target_dir}"/
+            fi
+          done
+
+      - name: Deploy Configuration Files
+        run: |
+          set -e
+          MAIN_CASE_PATH="${{ env.CASE_PATH }}"
+          CONFIG_FILE="${MAIN_CASE_PATH}/Config.cfg"
+
+          if [ ! -f "${CONFIG_FILE}" ]; then
+            echo "Error: Config.cfg not found at ${CONFIG_FILE}"
+            exit 1
+          fi
+
+          for mesh_dir in "${MAIN_CASE_PATH}"/*/; do
+            if [ -d "$mesh_dir" ] && [ "$(basename "$mesh_dir")" != "." ] && [ "$(basename "$mesh_dir")" != ".." ]; then
+              cp -v "${CONFIG_FILE}" "${mesh_dir}/Config.cfg"
+            fi
+          done
+
+      - name: Run Validation Pipeline
+        run: |
+          cd ValidationCases
+          python Automation.py \
+            "${{ github.event.inputs.category }}" \
+            "${{ github.event.inputs.case_code }}" \
+            "${{ github.event.inputs.turbulence_model }}" \
+            "${{ github.event.inputs.configuration }}"
+
+      - name: Archive Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ github.event.inputs.case_code }}_${{ github.event.inputs.turbulence_model }}_${{ github.event.inputs.configuration | replace(' ', '_') }}"
+          path: |
+            ${{ env.CASE_PATH }}/**/*.csv
+            ${{ env.CASE_PATH }}/**/*.vtu
+            ${{ env.CASE_PATH }}/**/*.png
+            ${{ env.CASE_PATH }}/**/plots/
+          retention-days: 14
+          if-no-files-found: error
