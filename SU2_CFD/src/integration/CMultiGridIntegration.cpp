@@ -480,7 +480,10 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     SU2_MPI::Bcast(&CFL_coarse_new, 1, MPI_DOUBLE, 0, SU2_MPI::GetComm());
 #endif
 
+    /*--- Only one thread should update the shared config object ---*/
+    SU2_OMP_MASTER
     config->SetCFL(iMesh+1, CFL_coarse_new);
+    END_SU2_OMP_MASTER
 
     /*--- Update LocalCFL at each coarse grid point ---*/
     SU2_OMP_FOR_STAT(roundUpDiv(geometry_coarse->GetnPoint(), omp_get_num_threads()))
