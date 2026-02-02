@@ -343,12 +343,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
       /*--- Force sequential execution of recursive calls for determinism ---*/
       SU2_OMP_BARRIER
-      SU2_OMP_MASTER
-      {
-        // Empty - just ensures only one thread enters the recursion at a time
-      }
-      END_SU2_OMP_MASTER
-      SU2_OMP_BARRIER
 
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
                       iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
