@@ -391,7 +391,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
       /*--- Reset state at the beginning of a new solve (iter 0 or 1) ---*/
       /*--- This ensures deterministic behavior across multiple runs ---*/
-      static unsigned long last_reset_iter = ULONG_MAX;
+      static unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
       if (current_iter <= 1 && last_reset_iter != current_iter) {
         for (int i = 0; i < MAX_MG_LEVELS; i++) {
           current_avg[i] = 0.0;
@@ -583,8 +583,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       }
 
       /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
-      solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-      solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+      // nijso: check if this can be removed now.
+      //solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+      //solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
 
     }
   }
@@ -631,7 +632,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   delete [] Solution;
 
   /*--- Ensure all threads complete before MPI communication ---*/
-  SU2_OMP_BARRIER
+  //nijso: check if this can be removed now.
+  //SU2_OMP_BARRIER
 
   /*--- Enforce Euler wall BC on corrections by projecting to tangent plane ---*/
   ProjectEulerWallToTangentPlane(geo_coarse, config, sol_coarse, true);
@@ -662,7 +664,8 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_OLD);
 
   /*--- Ensure MPI completion visible to all threads ---*/
-  SU2_OMP_BARRIER
+  // nijso: remove?
+  //SU2_OMP_BARRIER
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
