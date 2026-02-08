@@ -41,44 +41,43 @@ void ProjectEulerWallToTangentPlane(CGeometry* geo_coarse, const CConfig* config
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != EULER_WALL) continue;
 
-      SU2_OMP_FOR_STAT(32)
-      for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        const auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
+    SU2_OMP_FOR_STAT(32)
+    for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
+      const auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
 
-        if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
+      if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
 
-        /*--- Get coarse grid normal ---*/
-        su2double Normal[3] = {0.0};
-        geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
-        const auto nDim = geo_coarse->GetnDim();
-        su2double Area = GeometryToolbox::Norm(nDim, Normal);
+      /*--- Get coarse grid normal ---*/
+      su2double Normal[3] = {0.0};
+      geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
+      const auto nDim = geo_coarse->GetnDim();
+      su2double Area = GeometryToolbox::Norm(nDim, Normal);
 
-        if (Area < EPS) continue;
+      if (Area < EPS) continue;
 
-        /*--- Normalize normal vector ---*/
-        su2double UnitNormal[3] = {0.0};
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          UnitNormal[iDim] = Normal[iDim] / Area;
-        }
-
-        /*--- Get current solution or correction ---*/
-        su2double* solution_coarse = use_solution_old ?
-          sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse) :
-          sol_coarse->GetNodes()->GetSolution(Point_Coarse);
-
-        /*--- Compute normal component of momentum (v·n or correction·n) ---*/
-        su2double momentum_n = 0.0;
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          momentum_n += solution_coarse[iDim + 1] * UnitNormal[iDim];
-        }
-
-        /*--- Project to tangent plane: solution_coarse -= (solution_coarse·n)n ---*/
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          solution_coarse[iDim + 1] -= momentum_n * UnitNormal[iDim];
-        }
+      /*--- Normalize normal vector ---*/
+      su2double UnitNormal[3] = {0.0};
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        UnitNormal[iDim] = Normal[iDim] / Area;
       }
-      END_SU2_OMP_FOR
+
+      /*--- Get current solution or correction ---*/
+      su2double* solution_coarse = use_solution_old ?
+        sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse) :
+        sol_coarse->GetNodes()->GetSolution(Point_Coarse);
+
+      /*--- Compute normal component of momentum (v·n or correction·n) ---*/
+      su2double momentum_n = 0.0;
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        momentum_n += solution_coarse[iDim + 1] * UnitNormal[iDim];
+      }
+
+      /*--- Project to tangent plane: solution_coarse -= (solution_coarse·n)n ---*/
+      for (auto iDim = 0u; iDim < nDim; iDim++) {
+        solution_coarse[iDim + 1] -= momentum_n * UnitNormal[iDim];
+      }
     }
+    END_SU2_OMP_FOR
   }
 }
 }  // anonymous namespace
@@ -269,9 +268,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
     solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
     solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-
-    /*--- OpenMP memory fence to ensure all threads see consistent state ---*/
-    SU2_OMP_BARRIER
 
   }
 

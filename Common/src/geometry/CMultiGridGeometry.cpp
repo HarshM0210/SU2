@@ -493,7 +493,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    incorrectly interpreted as level N+1 indices. Resetting ensures clean agglomeration. ---*/
 
   for (auto iPoint = fine_grid->GetnPointDomain(); iPoint < fine_grid->GetnPoint(); iPoint++) {
-    fine_grid->nodes->SetParent_CV(iPoint, ULONG_MAX);
+    fine_grid->nodes->SetParent_CV(iPoint, std::numeric_limits<unsigned long>::max());
   }
 
   /*--- Dealing with MPI parallelization, the objective is that the received nodes must be agglomerated
@@ -554,14 +554,14 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       /*--- First pass: Determine which parents will actually be used (have non-skipped children).
        This prevents creating orphaned halo CVs that have coordinates (0,0,0). ---*/
       vector<bool> parent_used(Aux_Parent.size(), false);
-      vector<unsigned long> parent_local_index(Aux_Parent.size(), ULONG_MAX);
+      vector<unsigned long> parent_local_index(Aux_Parent.size(), std::numeric_limits<unsigned long>::max());
 
       for (auto iVertex = 0ul; iVertex < nVertexR; iVertex++) {
         const auto iPoint_Fine = fine_grid->vertex[MarkerR][iVertex]->GetNode();
         auto existing_parent = fine_grid->nodes->GetParent_CV(iPoint_Fine);
 
         /*--- Skip if already agglomerated (first-wins policy) ---*/
-        if (existing_parent != ULONG_MAX) continue;
+        if (existing_parent != std::numeric_limits<unsigned long>::max()) continue;
 
         /*--- Find which parent this vertex maps to ---*/
         for (auto jVertex = 0ul; jVertex < Aux_Parent.size(); jVertex++) {
@@ -583,7 +583,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
       /*--- Now map each received vertex to its local parent ---*/
       for (auto iVertex = 0ul; iVertex < nVertexR; iVertex++) {
-        Parent_Local[iVertex] = ULONG_MAX;
+        Parent_Local[iVertex] = std::numeric_limits<unsigned long>::max();
         for (auto jVertex = 0ul; jVertex < Aux_Parent.size(); jVertex++) {
           if (Parent_Remote[iVertex] == Aux_Parent[jVertex]) {
             Parent_Local[iVertex] = parent_local_index[jVertex];
@@ -592,7 +592,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         }
 
         /*--- Validate that parent mapping was found (only matters if not skipped later) ---*/
-        if (Parent_Local[iVertex] == ULONG_MAX) {
+        if (Parent_Local[iVertex] == std::numeric_limits<unsigned long>::max()) {
           SU2_MPI::Error(string("MPI agglomeration failed to map parent index ") + to_string(Parent_Remote[iVertex]) +
                              string(" for vertex ") + to_string(iVertex),
                          CURRENT_FUNCTION);
@@ -716,7 +716,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
     /*--- Note: CFL at the coarse levels have a large impact on convergence,
           this should be rewritten to use adaptive CFL. ---*/
     const su2double Coeff = 1.5;
-    const su2double CFL = factor * config->GetCFL(iMesh - 1) / Coeff;
+    const su2double CFL = config->GetCFL(iMesh - 1) / Coeff;
     config->SetCFL(iMesh, CFL);
   }
 
