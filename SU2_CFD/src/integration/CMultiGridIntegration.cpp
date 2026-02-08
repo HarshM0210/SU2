@@ -39,7 +39,7 @@ namespace {
 void ProjectEulerWallToTangentPlane(CGeometry* geo_coarse, const CConfig* config, CSolver* sol_coarse,
                                     bool use_solution_old) {
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL) {
+    if (config->GetMarker_All_KindBC(iMarker) != EULER_WALL) continue;
 
       SU2_OMP_FOR_STAT(32)
       for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
