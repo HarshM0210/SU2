@@ -82,6 +82,156 @@ void ProjectEulerWallToTangentPlane(CGeometry* geo_coarse, const CConfig* config
 }
 }  // anonymous namespace
 
+su2double CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
+                                                      unsigned short iMesh, su2double CFL_fine, su2double CFL_coarse_current) {
+  su2double current_coeff = CFL_coarse_current / CFL_fine;
+
+  /*--- Adaptive CFL using Exponential Moving Average (EMA) ---*/
+  /*--- All operations performed in master thread for determinism ---*/
+  constexpr int AVG_WINDOW = 5;
+
+  /*--- Only master thread performs CFL adaptation to ensure deterministic behavior ---*/
+  /*--- All adaptive CFL state and computation must be done by a single thread ---*/
+  su2double CFL_coarse_new = CFL_coarse_current; // Default: keep current value
+
+  SU2_OMP_MASTER
+  {
+    /*--- Get global iteration count first ---*/
+    unsigned long current_iter;
+    if (config->GetTime_Domain())
+      current_iter = config->GetTimeIter();
+    else
+      current_iter = config->GetInnerIter();
+
+    /*--- Reset state at the beginning of a new solve (iter 0 or 1) ---*/
+    /*--- This ensures deterministic behavior across multiple runs ---*/
+    if (current_iter <= 1 && last_reset_iter != current_iter) {
+      for (int i = 0; i < MAX_MG_LEVELS; i++) {
+        current_avg[i] = 0.0;
+        prev_avg[i] = 0.0;
+        last_res[i] = 0.0;
+        last_was_increase[i] = false;
+        oscillation_count[i] = 0;
+        last_check_iter[i] = 0;
+        last_update_iter[i] = 0;
+      }
+      last_reset_iter = current_iter;
+    }
+
+    unsigned short lvl = min(iMesh, (unsigned short)(MAX_MG_LEVELS - 1));
+    unsigned long iter = current_iter;
+
+    /*--- Get sum of all RMS residuals for all variables (local to this rank) ---*/
+    su2double rms_res_coarse_local = 0.0;
+    for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
+      rms_res_coarse_local += solver_coarse->GetRes_RMS(iVar);
+    }
+
+    /*--- MPI synchronization: ensure all ranks use the same global residual value ---*/
+    /*--- This is critical for consistent CFL adaptation across all ranks ---*/
+    su2double rms_res_coarse = rms_res_coarse_local;
+
+    /*--- For coarse grids, residuals are not globally reduced by default ---*/
+    /*--- We need to synchronize them for consistent adaptive CFL decisions ---*/
+    if (geometry_coarse->GetMGLevel() > 0) {
+      su2double rms_global_sum = 0.0;
+      SU2_MPI::Allreduce(&rms_res_coarse_local, &rms_global_sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+      rms_res_coarse = rms_global_sum / static_cast<su2double>(SU2_MPI::GetSize());
+    }
+
+    /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
+    bool oscillation_detected = false;
+    if (iter != last_check_iter[lvl]) {
+      last_check_iter[lvl] = iter;
+
+      if (last_res[lvl] > EPS) {
+        bool current_is_increase = (rms_res_coarse > last_res[lvl]);
+        if (current_is_increase != last_was_increase[lvl]) {
+          /*--- Direction changed, increment oscillation counter ---*/
+          oscillation_count[lvl]++;
+          if (oscillation_count[lvl] >= 4) {
+            /*--- Detected 4 consecutive direction changes = oscillation ---*/
+            oscillation_detected = true;
+            oscillation_count[lvl] = 0;  // Reset counter after detecting
+          }
+        } else {
+          /*--- Same direction, reset counter ---*/
+          oscillation_count[lvl] = 0;
+        }
+        last_was_increase[lvl] = current_is_increase;
+      }
+      last_res[lvl] = rms_res_coarse;
+    }
+
+    /*--- Update exponential moving average ---*/
+    if (current_avg[lvl] < EPS) {
+      current_avg[lvl] = rms_res_coarse;  // Initialize with first value
+    } else {
+      current_avg[lvl] = (current_avg[lvl] * (AVG_WINDOW - 1) + rms_res_coarse) / AVG_WINDOW;
+    }
+
+    /*--- Check if we should compare and adapt CFL ---*/
+    su2double new_coeff = current_coeff;
+    const su2double MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
+    const int UPDATE_INTERVAL = 5;  // Update reference every N iterations
+
+    /*--- Initialize prev_avg on first use ---*/
+    if (prev_avg[lvl] < EPS) {
+      prev_avg[lvl] = current_avg[lvl];
+    }
+
+    /*--- Periodically update prev_avg to allow ratio to reflect accumulated decrease ---*/
+    bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
+
+    /*--- Asymmetric adaptation for robustness ---*/
+    if (prev_avg[lvl] > EPS) {
+      su2double ratio = current_avg[lvl] / prev_avg[lvl];
+      bool sufficient_decrease = (ratio < MIN_REDUCTION_FACTOR);
+      bool increasing_trend = (ratio >= 1.0);
+
+      if (increasing_trend) {
+        /*--- Residual increasing: reduce CFL immediately for robustness ---*/
+        new_coeff = current_coeff * 0.90;
+        /*--- Update reference since we're reacting immediately ---*/
+        prev_avg[lvl] = current_avg[lvl];
+        last_update_iter[lvl] = iter;
+      } else if (sufficient_decrease && should_update) {
+        /*--- Residual decreasing sufficiently: increase CFL ---*/
+        new_coeff = current_coeff * 1.05;
+        /*--- Update reference only when we actually increase CFL ---*/
+        prev_avg[lvl] = current_avg[lvl];
+        last_update_iter[lvl] = iter;
+      }
+    }
+
+    /*--- CFL reduction for oscillation detection ---*/
+    if (oscillation_detected) {
+      new_coeff = current_coeff * 0.75;
+      /*--- Update reference after oscillation response ---*/
+      prev_avg[lvl] = current_avg[lvl];
+      last_update_iter[lvl] = iter;
+    }
+
+    /*--- Clamp coefficient between 0.5 and 1.0 ---*/
+    new_coeff = max(0.5, min(1.0, new_coeff));
+
+    /*--- Update coarse grid CFL ---*/
+    CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
+
+#ifdef HAVE_MPI
+    /*--- Ensure all ranks use the same CFL value (broadcast from rank 0) ---*/
+    SU2_MPI::Bcast(&CFL_coarse_new, 1, MPI_DOUBLE, 0, SU2_MPI::GetComm());
+#endif
+
+    /*--- Update the shared config object ---*/
+    config->SetCFL(iMesh+1, CFL_coarse_new);
+  }
+  END_SU2_OMP_MASTER
+  /*--- Implicit barrier at end of master region ensures all threads see updated CFL ---*/
+
+  return CFL_coarse_new;
+}
+
 CMultiGridIntegration::CMultiGridIntegration() : CIntegration() { }
 
 void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
@@ -341,164 +491,9 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     /*--- Get current CFL values ---*/
     su2double CFL_fine = config->GetCFL(iMesh);
     su2double CFL_coarse_current = config->GetCFL(iMesh+1);
-    su2double current_coeff = CFL_coarse_current / CFL_fine;
 
-    /*--- Adaptive CFL using Exponential Moving Average (EMA) ---*/
-    /*--- All operations performed in master thread for determinism ---*/
-    constexpr int AVG_WINDOW = 5;
-    constexpr int MAX_MG_LEVELS = 10;
-
-    /*--- Use static storage shared across all threads for deterministic CFL adaptation ---*/
-    /*--- Each MPI rank maintains its own independent adaptive CFL state ---*/
-    /*--- Note: MPI ranks do not share memory, so static is safe for MPI parallelism ---*/
-    static su2double current_avg[MAX_MG_LEVELS] = {};
-    static su2double prev_avg[MAX_MG_LEVELS] = {};
-    static su2double last_res[MAX_MG_LEVELS] = {};
-    static bool last_was_increase[MAX_MG_LEVELS] = {};
-    static int oscillation_count[MAX_MG_LEVELS] = {};
-    static unsigned long last_check_iter[MAX_MG_LEVELS] = {};
-    static unsigned long last_update_iter[MAX_MG_LEVELS] = {};
-
-    /*--- Only master thread performs CFL adaptation to ensure deterministic behavior ---*/
-    /*--- All adaptive CFL state and computation must be done by a single thread ---*/
-    su2double CFL_coarse_new = CFL_coarse_current; // Default: keep current value
-
-    SU2_OMP_MASTER
-    {
-      /*--- Get global iteration count first ---*/
-      unsigned long current_iter;
-      if (config->GetTime_Domain())
-        current_iter = config->GetTimeIter();
-      else
-        current_iter = config->GetInnerIter();
-
-      /*--- Reset state at the beginning of a new solve (iter 0 or 1) ---*/
-      /*--- This ensures deterministic behavior across multiple runs ---*/
-      static unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
-      if (current_iter <= 1 && last_reset_iter != current_iter) {
-        for (int i = 0; i < MAX_MG_LEVELS; i++) {
-          current_avg[i] = 0.0;
-          prev_avg[i] = 0.0;
-          last_res[i] = 0.0;
-          last_was_increase[i] = false;
-          oscillation_count[i] = 0;
-          last_check_iter[i] = 0;
-          last_update_iter[i] = 0;
-        }
-        last_reset_iter = current_iter;
-      }
-
-      unsigned short lvl = min(iMesh, (unsigned short)(MAX_MG_LEVELS - 1));
-      unsigned long iter = current_iter;
-
-      /*--- Get sum of all RMS residuals for all variables (local to this rank) ---*/
-      su2double rms_res_coarse_local = 0.0;
-      for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
-        rms_res_coarse_local += solver_coarse->GetRes_RMS(iVar);
-      }
-
-      /*--- MPI synchronization: ensure all ranks use the same global residual value ---*/
-      /*--- This is critical for consistent CFL adaptation across all ranks ---*/
-      su2double rms_res_coarse = rms_res_coarse_local;
-
-      /*--- For coarse grids, residuals are not globally reduced by default ---*/
-      /*--- We need to synchronize them for consistent adaptive CFL decisions ---*/
-      if (geometry_coarse->GetMGLevel() > 0) {
-        su2double rms_global_sum = 0.0;
-        SU2_MPI::Allreduce(&rms_res_coarse_local, &rms_global_sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-        rms_res_coarse = rms_global_sum / static_cast<su2double>(SU2_MPI::GetSize());
-      }
-#endif
-
-      /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
-      bool oscillation_detected = false;
-      if (iter != last_check_iter[lvl]) {
-        last_check_iter[lvl] = iter;
-
-        if (last_res[lvl] > EPS) {
-          bool current_is_increase = (rms_res_coarse > last_res[lvl]);
-          if (current_is_increase != last_was_increase[lvl]) {
-            /*--- Direction changed, increment oscillation counter ---*/
-            oscillation_count[lvl]++;
-            if (oscillation_count[lvl] >= 4) {
-              /*--- Detected 4 consecutive direction changes = oscillation ---*/
-              oscillation_detected = true;
-              oscillation_count[lvl] = 0;  // Reset counter after detecting
-            }
-          } else {
-            /*--- Same direction, reset counter ---*/
-            oscillation_count[lvl] = 0;
-          }
-          last_was_increase[lvl] = current_is_increase;
-        }
-        last_res[lvl] = rms_res_coarse;
-      }
-
-      /*--- Update exponential moving average ---*/
-      if (current_avg[lvl] < EPS) {
-        current_avg[lvl] = rms_res_coarse;  // Initialize with first value
-      } else {
-        current_avg[lvl] = (current_avg[lvl] * (AVG_WINDOW - 1) + rms_res_coarse) / AVG_WINDOW;
-      }
-
-      /*--- Check if we should compare and adapt CFL ---*/
-      su2double new_coeff = current_coeff;
-      const su2double MIN_REDUCTION_FACTOR = 0.98;  // Require at least 2% reduction
-      const int UPDATE_INTERVAL = 5;  // Update reference every N iterations
-
-      /*--- Initialize prev_avg on first use ---*/
-      if (prev_avg[lvl] < EPS) {
-        prev_avg[lvl] = current_avg[lvl];
-      }
-
-      /*--- Periodically update prev_avg to allow ratio to reflect accumulated decrease ---*/
-      bool should_update = (iter - last_update_iter[lvl] >= UPDATE_INTERVAL);
-
-      /*--- Asymmetric adaptation for robustness ---*/
-      if (prev_avg[lvl] > EPS) {
-        su2double ratio = current_avg[lvl] / prev_avg[lvl];
-        bool sufficient_decrease = (ratio < MIN_REDUCTION_FACTOR);
-        bool increasing_trend = (ratio >= 1.0);
-
-        if (increasing_trend) {
-          /*--- Residual increasing: reduce CFL immediately for robustness ---*/
-          new_coeff = current_coeff * 0.90;
-          /*--- Update reference since we're reacting immediately ---*/
-          prev_avg[lvl] = current_avg[lvl];
-          last_update_iter[lvl] = iter;
-        } else if (sufficient_decrease && should_update) {
-          /*--- Residual decreasing sufficiently: increase CFL ---*/
-          new_coeff = current_coeff * 1.05;
-          /*--- Update reference only when we actually increase CFL ---*/
-          prev_avg[lvl] = current_avg[lvl];
-          last_update_iter[lvl] = iter;
-        }
-      }
-
-      /*--- CFL reduction for oscillation detection ---*/
-      if (oscillation_detected) {
-        new_coeff = current_coeff * 0.75;
-        /*--- Update reference after oscillation response ---*/
-        prev_avg[lvl] = current_avg[lvl];
-        last_update_iter[lvl] = iter;
-      }
-
-      /*--- Clamp coefficient between 0.5 and 1.0 ---*/
-      new_coeff = max(0.5, min(1.0, new_coeff));
-
-      /*--- Update coarse grid CFL ---*/
-      CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
-
-#ifdef HAVE_MPI
-      /*--- Ensure all ranks use the same CFL value (broadcast from rank 0) ---*/
-      SU2_MPI::Bcast(&CFL_coarse_new, 1, MPI_DOUBLE, 0, SU2_MPI::GetComm());
-#endif
-
-      /*--- Update the shared config object ---*/
-      config->SetCFL(iMesh+1, CFL_coarse_new);
-    }
-    END_SU2_OMP_MASTER
-    /*--- Implicit barrier at end of master region ensures all threads see updated CFL ---*/
+    /*--- Compute adaptive CFL for coarse grid ---*/
+    su2double CFL_coarse_new = computeMultigridCFL(config, solver_coarse, geometry_coarse, iMesh, CFL_fine, CFL_coarse_current);
 
     /*--- Update LocalCFL at each coarse grid point ---*/
     SU2_OMP_FOR_STAT(roundUpDiv(geometry_coarse->GetnPoint(), omp_get_num_threads()))

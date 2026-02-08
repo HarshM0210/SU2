@@ -181,4 +181,28 @@ private:
   void Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
+  /*!
+   * \brief Compute adaptive CFL for multigrid coarse levels.
+   * \param[in] config - Problem configuration.
+   * \param[in] solver_coarse - Coarse grid solver.
+   * \param[in] geometry_coarse - Coarse grid geometry.
+   * \param[in] iMesh - Current multigrid level.
+   * \param[in] CFL_fine - Fine grid CFL value.
+   * \param[in] CFL_coarse_current - Current coarse grid CFL value.
+   * \return New CFL value for the coarse grid.
+   */
+  su2double computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
+                                 unsigned short iMesh, su2double CFL_fine, su2double CFL_coarse_current);
+
+  /*--- CFL adaptation state variables ---*/
+  static constexpr int MAX_MG_LEVELS = 10;
+  su2double current_avg[MAX_MG_LEVELS] = {};
+  su2double prev_avg[MAX_MG_LEVELS] = {};
+  su2double last_res[MAX_MG_LEVELS] = {};
+  bool last_was_increase[MAX_MG_LEVELS] = {};
+  int oscillation_count[MAX_MG_LEVELS] = {};
+  unsigned long last_check_iter[MAX_MG_LEVELS] = {};
+  unsigned long last_update_iter[MAX_MG_LEVELS] = {};
+  unsigned long last_reset_iter = std::numeric_limits<unsigned long>::max();
+
 };
