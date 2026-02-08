@@ -341,7 +341,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       if (iMesh == config->GetnMGLevels()-2)
         nextRecurseParam = 0;
 
-      /*--- Force sequential execution of recursive calls for determinism ---*/
+      /*--- Synchronize prior to recursive calls for determinism ---*/
       SU2_OMP_BARRIER
 
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
