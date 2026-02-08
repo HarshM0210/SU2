@@ -118,19 +118,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   const unsigned short Solver_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
-  /*--- Start an OpenMP parallel region covering the entire MG iteration, if the solver supports it. ---*/
-  /*--- Set thread affinity for deterministic execution ---*/
-
-#ifdef _OPENMP
-  /*--- Store original thread affinity settings ---*/
-  static bool affinity_set = false;
-  if (!affinity_set) {
-    // This ensures threads are bound consistently across runs
-    omp_set_schedule(omp_sched_static, 0);
-    affinity_set = true;
-  }
-#endif
-
   SU2_OMP_PARALLEL_(if(solver_container[iZone][iInst][MESH_0][Solver_Position]->GetHasHybridParallel()))
   {
 

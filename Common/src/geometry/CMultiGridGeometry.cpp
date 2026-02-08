@@ -623,7 +623,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
         /*--- Solution 1: Skip if this halo point was already agglomerated ---*/
         auto existing_parent = fine_grid->nodes->GetParent_CV(iPoint_Fine);
-        if (existing_parent != ULONG_MAX) {
+        if (existing_parent != std::numeric_limits<unsigned long>::max()) {
           if (existing_parent != iPoint_Coarse) {
             /*--- Conflict detected: different parent from different interface ---*/
             nConflicts++;
@@ -799,11 +799,8 @@ bool CMultiGridGeometry::GeometricalCheck(unsigned long iPoint, const CGeometry*
     Volume = false;
     cout << "Volume limit reached!" << endl;
   }
-  /*--- Evaluate the stretching of the element ---*/
 
-  bool Stretching = true;
-
-  return (Stretching && Volume);
+  return (Volume);
 }
 
 bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<short> marker_seed,

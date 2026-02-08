@@ -32,7 +32,7 @@ class CMultiGridQueue;
 
 /*!
  * \class CMultiGridGeometry
- * \brief Class for defining the multigrid geometry, the main delegated part is the
+ * \brief Class for defining the multigrid geometry, the main dedicated part is the
  *        agglomeration stage, which is done in the declaration.
  * \author F. Palacios
  */
