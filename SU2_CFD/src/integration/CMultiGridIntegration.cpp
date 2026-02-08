@@ -418,7 +418,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       /*--- This is critical for consistent CFL adaptation across all ranks ---*/
       su2double rms_res_coarse = rms_res_coarse_local;
 
-#ifdef HAVE_MPI
       /*--- For coarse grids, residuals are not globally reduced by default ---*/
       /*--- We need to synchronize them for consistent adaptive CFL decisions ---*/
       if (geometry_coarse->GetMGLevel() > 0) {
