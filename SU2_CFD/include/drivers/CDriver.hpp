@@ -167,6 +167,18 @@ class CDriver : public CDriverBase {
   void RestartSolver(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
 
   /*!
+   * \brief Write restart files for the previous timestep (Solution_Old) when stopping at max_time
+   *        or last iteration with second-order unsteady time stepping.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Container vector with all the solutions.
+   * \param[in] output - Output instance for writing files.
+   * \param[in] TimeIter - Current time iteration (restart for TimeIter-1 is written).
+   */
+  void WriteUnsteadyRestartPreviousStep(CGeometry* geometry, CConfig* config, CSolver** solver,
+                                        COutput* output, unsigned long TimeIter);
+
+  /*!
    * \brief Definition and allocation of all solution classes.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.

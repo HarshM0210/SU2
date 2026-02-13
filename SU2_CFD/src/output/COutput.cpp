@@ -805,7 +805,7 @@ bool COutput::GetCauchyCorrectedTimeConvergence(const CConfig *config){
 }
 
 bool COutput::SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** solver_container,
-                              unsigned long iter, bool force_writing) {
+                              unsigned long iter, bool force_writing, bool write_restart_only) {
 
   bool isFileWrite = false, dataIsLoaded = false;
   const auto nVolumeFiles = config->GetnVolumeOutputFiles();
@@ -815,6 +815,13 @@ bool COutput::SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** sol
   AllocateDataSorters(config, geometry);
 
   for (unsigned short iFile = 0; iFile < nVolumeFiles; iFile++) {
+
+    /*--- When writing only restart files, skip non-restart volume output types. ---*/
+    if (write_restart_only) {
+      const auto fmt = VolumeFiles[iFile];
+      if (fmt != OUTPUT_TYPE::RESTART_ASCII && fmt != OUTPUT_TYPE::RESTART_BINARY && fmt != OUTPUT_TYPE::CSV)
+        continue;
+    }
 
     /*--- Collect the volume data from the solvers.
      *  If time-domain is enabled, we also load the data although we don't output it,

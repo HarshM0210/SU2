@@ -591,10 +591,11 @@ public:
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] iter - The current time, outer or inner iteration index.
    * \param[in] force_writing - If <TRUE>, writing of output files is forced without checking the output frequency.
+   * \param[in] write_restart_only - If <TRUE>, only restart (and CSV restart) volume files are written.
    * \return <TRUE> if output files have been written to disk.
    */
   bool SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** solver_container,
-                       unsigned long iter, bool force_writing = false);
+                       unsigned long iter, bool force_writing = false, bool write_restart_only = false);
 
   /*!
    * \brief Get convergence time convergence of the specified windowed-time-averaged ouput of the problem.

@@ -282,6 +282,11 @@ public:
   void Set_Solution();
 
   /*!
+   * \brief Swap Solution and Solution_Old (e.g. for writing unsteady restart at previous timestep).
+   */
+  void SwapSolutionWithOld();
+
+  /*!
    * \brief Set the variable solution at time n.
    */
   void Set_Solution_time_n();

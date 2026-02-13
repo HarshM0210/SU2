@@ -27,6 +27,7 @@
 
 #include "../../include/variables/CVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
+#include <utility>
 
 CVariable::CVariable(unsigned long npoint, unsigned long nvar, const CConfig *config) {
 
@@ -89,6 +90,11 @@ void CVariable::Set_OldSolution() {
 void CVariable::Set_Solution() {
   assert(Solution.size() == Solution_Old.size());
   parallelCopy(Solution_Old.size(), Solution_Old.data(), Solution.data());
+}
+
+void CVariable::SwapSolutionWithOld() {
+  assert(Solution.size() == Solution_Old.size());
+  std::swap(Solution, Solution_Old);
 }
 
 void CVariable::Set_Solution_time_n() {
