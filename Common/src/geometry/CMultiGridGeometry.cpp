@@ -836,18 +836,6 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
 
 void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long>& Suitable_Indirect_Neighbors, unsigned long iPoint,
                                               unsigned long Index_CoarseCV, const CGeometry* fine_grid) const {
-  /*--- Create a list with the first neighbors, including the seed. ---*/
-
-  vector<unsigned long> First_Neighbor_Points;
-  First_Neighbor_Points.push_back(iPoint);
-  for (auto jPoint : fine_grid->nodes->GetPoints(iPoint)) First_Neighbor_Points.push_back(jPoint);
-
-  /*--- Create a list with the second neighbors, without first, and seed neighbors. ---*/
-
-  vector<unsigned long> Second_Neighbor_Points, Second_Origin_Points, Suitable_Second_Neighbors;
-
-  for (auto jPoint : fine_grid->nodes->GetPoints(iPoint)) {
-    for (auto kPoint : fine_grid->nodes->GetPoints(jPoint)) {
       /*--- Check that the second neighbor does not belong to the first neighbors or the seed. ---*/
 
       auto end = First_Neighbor_Points.end();
