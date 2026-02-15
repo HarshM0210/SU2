@@ -59,7 +59,8 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   /*--- Set a marker to indicate indirect agglomeration, for quads and hexs,
    i.e. consider up to neighbors of neighbors.
    For other levels this information is propagated down during their construction. ---*/
-  if (iMesh == MESH_1) {
+
+   if (iMesh == MESH_1) {
     for (auto iPoint = 0ul; iPoint < fine_grid->GetnPoint(); iPoint++)
       fine_grid->nodes->SetAgglomerate_Indirect(iPoint, false);
 
@@ -75,6 +76,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
 
   /*--- Create the coarse grid structure using as baseline the fine grid ---*/
+
   CMultiGridQueue MGQueue_InnerCV(fine_grid->GetnPoint());
   vector<unsigned long> Suitable_Indirect_Neighbors;
 
@@ -146,6 +148,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           // The seed/parent is one valley, so we set this part to true
           // if the child is on the same valley, we set it to true as well.
           agglomerate_seed = true;
+
           /*--- Euler walls: check curvature-based agglomeration criterion ---*/
           if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL) {
             /*--- Allow agglomeration if marker is straight OR local curvature is small ---*/
@@ -171,13 +174,13 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           }
         }
 
-        /*--- Note that in 2D, this is a corner and we do not agglomerate unless they both are SEND_RECEIVE. ---*/
+        /*--- Note that in 2D, this is a corner and we do not agglomerate unless one of them is SEND_RECEIVE. ---*/
         /*--- In 3D, we agglomerate if the 2 markers are the same. ---*/
         if (counter == 2) {
-          /*--- agglomerate if one of the 2 markers are MPI markers. ---*/
+
           if (nDim == 2) {
-            // agglomerate_seed = ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
-            //                     (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE));
+             agglomerate_seed = ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
+                                 (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE));
           }
           /*--- agglomerate if both markers are the same. ---*/
           if (nDim == 3) agglomerate_seed = (copy_marker[0] == copy_marker[1]);
@@ -206,19 +209,25 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         }
 
         /*--- If there are more than 2 markers, the aglomeration will be discarded ---*/
+
         if (counter > 2) agglomerate_seed = false;
 
         /*--- If the seed (parent) can be agglomerated, we try to agglomerate connected childs to the parent ---*/
         /*--- Note that in 2D we allow a maximum of 4 nodes to be agglomerated ---*/
+
         if (agglomerate_seed) {
           /*--- Now we do a sweep over all the nodes that surround the seed point ---*/
+
           for (auto CVPoint : fine_grid->nodes->GetPoints(iPoint)) {
             /*--- The new point can be agglomerated ---*/
+
             if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
               /*--- We set the value of the parent ---*/
+
               fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
 
               /*--- We set the value of the child ---*/
+
               nodes->SetChildren_CV(Index_CoarseCV, nChildren, CVPoint);
               nChildren++;
               /*--- In 2D, we agglomerate exactly 2 nodes if the nodes are on the line edge. ---*/
@@ -238,18 +247,23 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               SetSuitableNeighbors(Suitable_Indirect_Neighbors, iPoint, Index_CoarseCV, fine_grid);
 
             /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
+
             for (auto CVPoint : Suitable_Indirect_Neighbors) {
               /*--- The new point can be agglomerated ---*/
+
               if (SetBoundAgglomeration(CVPoint, marker_seed, fine_grid, config)) {
                 /*--- We set the value of the parent ---*/
+
                 fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
 
                 /*--- We set the indirect agglomeration information of the corse point
                 based on its children in the fine grid. ---*/
+
                 if (fine_grid->nodes->GetAgglomerate_Indirect(CVPoint))
                   nodes->SetAgglomerate_Indirect(Index_CoarseCV, true);
 
                 /*--- We set the value of the child ---*/
+
                 nodes->SetChildren_CV(Index_CoarseCV, nChildren, CVPoint);
                 nChildren++;
                 /*--- Apply maxAgglomSize limit for 3D internal boundary face nodes. ---*/
@@ -302,6 +316,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   }
 
   /*--- STEP 2: Agglomerate the domain points. ---*/
+
   auto iteration = 0ul;
   while (!MGQueue_InnerCV.EmptyQueue() && (iteration < fine_grid->GetnPoint())) {
     const auto iPoint = MGQueue_InnerCV.NextCV();
@@ -363,8 +378,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         // if we have reached the maximum, get out.
         if (nChildren == maxAgglomSize) break;
         /*--- The new point can be agglomerated ---*/
+
         if ((!fine_grid->nodes->GetAgglomerate(CVPoint)) && (fine_grid->nodes->GetDomain(CVPoint))) {
           /*--- We set the value of the parent ---*/
+
           fine_grid->nodes->SetParent_CV(CVPoint, Index_CoarseCV);
 
           /*--- We set the indirect agglomeration information ---*/
@@ -418,6 +435,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   for (auto iCoarsePoint = 0ul; iCoarsePoint < nPointDomain; iCoarsePoint++) {
     if (nodes->GetnPoint(iCoarsePoint) == 1) {
       /*--- Find the neighbor of the isolated point. This neighbor is the right control volume ---*/
+
       const auto iCoarsePoint_Complete = nodes->GetPoint(iCoarsePoint, 0);
 
       /*--- Check if merging would exceed the maximum agglomeration size ---*/
@@ -476,6 +494,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       }
 
       /*--- Update the number of children control volumes ---*/
+
       nodes->SetnChildren_CV(iCoarsePoint_Complete, nChildren);
       nodes->SetnChildren_CV(iCoarsePoint, 0);
     }
@@ -563,6 +582,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- Skip if already agglomerated (first-wins policy) ---*/
         if (existing_parent != std::numeric_limits<unsigned long>::max()) continue;
 
+        /*--- Skip if received parent is invalid (sending rank didn't agglomerate this point) ---*/
+        if (Parent_Remote[iVertex] == std::numeric_limits<unsigned long>::max()) continue;
+
         /*--- Find which parent this vertex maps to ---*/
         for (auto jVertex = 0ul; jVertex < Aux_Parent.size(); jVertex++) {
           if (Parent_Remote[iVertex] == Aux_Parent[jVertex]) {
@@ -591,12 +613,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           }
         }
 
-        /*--- Validate that parent mapping was found (only matters if not skipped later) ---*/
-        if (Parent_Local[iVertex] == std::numeric_limits<unsigned long>::max()) {
-          SU2_MPI::Error(string("MPI agglomeration failed to map parent index ") + to_string(Parent_Remote[iVertex]) +
-                             string(" for vertex ") + to_string(iVertex),
-                         CURRENT_FUNCTION);
-        }
 
         Children_Local[iVertex] = fine_grid->vertex[MarkerR][iVertex]->GetNode();
       }
@@ -605,46 +621,29 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       Index_CoarseCV += nUsedParents;
 
       /*--- Debug counters ---*/
-      unsigned long nConflicts = 0, nSkipped = 0, nOutOfBounds = 0, nSuccess = 0;
+      unsigned long nSkipped = 0, nSuccess = 0;
 
       /*--- Create the final structure ---*/
       for (auto iVertex = 0ul; iVertex < nVertexR; iVertex++) {
-        const auto iPoint_Coarse = Parent_Local[iVertex];
         const auto iPoint_Fine = Children_Local[iVertex];
 
-        /*--- Debug: Check for out-of-bounds access ---*/
-        if (iPoint_Coarse >= Index_CoarseCV) {
-          cout << "ERROR [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR
-               << "]: Out-of-bounds coarse CV index " << iPoint_Coarse << " >= " << Index_CoarseCV << " (vertex "
-               << iVertex << ", fine point " << iPoint_Fine << ")" << endl;
-          nOutOfBounds++;
-          continue;
-        }
-
-        /*--- Solution 1: Skip if this halo point was already agglomerated ---*/
+        /*--- Skip if this halo point was already agglomerated (first-wins policy) ---*/
         auto existing_parent = fine_grid->nodes->GetParent_CV(iPoint_Fine);
         if (existing_parent != std::numeric_limits<unsigned long>::max()) {
-          if (existing_parent != iPoint_Coarse) {
-            /*--- Conflict detected: different parent from different interface ---*/
-            nConflicts++;
-
-            /*--- Only print detailed info for first few conflicts or if suspicious ---*/
-            if (nConflicts <= 5 || existing_parent < nPointDomain) {
-              cout << "INFO [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR << "]: Halo point "
-                   << iPoint_Fine << " already agglomerated to parent " << existing_parent
-                   << (existing_parent < nPointDomain ? " (DOMAIN CV!)" : " (halo CV)") << ", skipping reassignment to "
-                   << iPoint_Coarse << " (from rank " << receive_from << ")" << endl;
-            }
-          } else {
-            /*--- Same parent from different interface (duplicate) - just skip silently ---*/
-            nSkipped++;
-          }
+          nSkipped++;
           continue;  // First-wins: keep existing assignment
+        }
+
+        /*--- Skip if parent mapping is invalid (sender didn't agglomerate) ---*/
+        const auto iPoint_Coarse = Parent_Local[iVertex];
+        if (iPoint_Coarse == std::numeric_limits<unsigned long>::max()) {
+          nSkipped++;
+          continue;
         }
 
         /*--- First assignment for this halo point - proceed with agglomeration ---*/
 
-        /*--- Critical fix: Append to existing children, don't overwrite ---*/
+        /*--- Append to existing children, don't overwrite ---*/
         auto existing_children_count = nodes->GetnChildren_CV(iPoint_Coarse);
 
         fine_grid->nodes->SetParent_CV(iPoint_Fine, iPoint_Coarse);
@@ -654,45 +653,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         nSuccess++;
       }
 
-      /*--- Debug: Report statistics for this marker pair ---*/
-      cout << "MPI Agglomeration [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR << " (rank " << send_to
-           << " <-> " << receive_from << ")]: " << nSuccess << " assigned, " << nSkipped << " duplicates, "
-           << nConflicts << " conflicts";
-      if (nOutOfBounds > 0) {
-        cout << ", " << nOutOfBounds << " OUT-OF-BOUNDS (CRITICAL!)";
-      }
-      cout << endl;
-
-      if (nConflicts > 5) {
-        cout << "  Note: Only first 5 conflicts shown in detail, total conflicts = " << nConflicts << endl;
-      }
-
-      /*--- Debug: Validate buffer size assumption ---*/
-      if (nVertexS != nVertexR) {
-        cout << "WARNING [Rank " << rank << ", Marker " << MarkerS << "/" << MarkerR
-             << "]: Asymmetric interface - nVertexS=" << nVertexS << " != nVertexR=" << nVertexR << endl;
-      }
-    }
-  }
-
-  /*--- Post-process: Check for orphaned coarse CVs (should be none with new logic) ---*/
-
-  if (size > SINGLE_NODE) {
-    unsigned long nOrphaned = 0;
-
-    /*--- Count orphaned CVs for reporting ---*/
-    for (auto iCoarse = nPointDomain; iCoarse < Index_CoarseCV; iCoarse++) {
-      if (nodes->GetnChildren_CV(iCoarse) == 0) {
-        nOrphaned++;
-        /*--- This shouldn't happen with the new parent prefiltering logic ---*/
-        cout << "WARNING [Rank " << rank << "]: Orphaned halo CV " << iCoarse
-             << " detected (should not occur with current logic)" << endl;
-      }
-    }
-
-    if (nOrphaned > 0) {
-      cout << "WARNING [Rank " << rank << "]: " << nOrphaned
-           << " orphaned halo coarse CVs found - this indicates a logic error!" << endl;
     }
   }
 
@@ -723,6 +683,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   const su2double ratio = su2double(Global_nPointFine) / su2double(Global_nPointCoarse);
   cout << "********** ratio = " << ratio << endl;
   // lower value leads to more levels being accepted.
+
   if (((nDim == 2) && (ratio < 1.5)) || ((nDim == 3) && (ratio < 1.5))) {
     config->SetMGLevels(iMesh - 1);
   } else if (rank == MASTER_NODE) {
@@ -839,31 +800,24 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
         // note that this should be the same marker id, not just the same marker type.
         if ((marker_seed.size() == 1) && (copy_marker[0] == marker_seed[0])) agglomerate_CV = true;
 
-        // /*--- If seed has 2 markers and one is SEND_RECEIVE, do not agglomerate with physical boundary ---*/
-        // if ((marker_seed.size() == 2) && (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE)) {
-        //   if (copy_marker[0] == marker_seed[1]) {
-        //     agglomerate_CV = false;
-        //   }
-        // }
-        // if ((marker_seed.size() == 2) && (config->GetMarker_All_KindBC(marker_seed[1]) == SEND_RECEIVE)) {
-        //   if (copy_marker[0] == marker_seed[0]) {
-        //     agglomerate_CV = false;
-        //   }
-        // }
+        // we also allow agglomeration if the seed has 2 markers, one of them is the same as the candidate, and the other is a send-receive marker.
+        if ((marker_seed.size() == 2) && ((copy_marker[0] == marker_seed[0]) || (copy_marker[0] == marker_seed[1]))) {
+          // check that the other marker is a send-receive marker
+          unsigned short other_marker = (copy_marker[0] == marker_seed[0]) ? marker_seed[1] : marker_seed[0];
+          if (config->GetMarker_All_KindBC(other_marker) == SEND_RECEIVE) {
+            agglomerate_CV = true;
+          }
+        }
 
-        /*--- Note: If there is only one marker, but the marker is the SEND_RECEIVE, then the point is actually an
-              interior point and we do not agglomerate.  ---*/
       }
 
       /*--- If there are two markers in the vertex that is going to be aglomerated ---*/
-
       if (counter == 2) {
         /*--- In 2D this is a corner and we do not agglomerate ---*/
         if (nDim == 2) {
           agglomerate_CV = false;
         }
         /*--- Both markers have to be the same. ---*/
-
         if (marker_seed.size() == 2) {
           if (((copy_marker[0] == marker_seed[0]) && (copy_marker[1] == marker_seed[1])) ||
               ((copy_marker[0] == marker_seed[1]) && (copy_marker[1] == marker_seed[0]))) {

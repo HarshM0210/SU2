@@ -164,11 +164,9 @@ private:
    * \param[in] geo_fine - Geometrical definition of the fine grid.
    * \param[in] geo_coarse - Geometrical definition of the coarse grid.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] InclSharedDomain - Include the shared domain in the interpolation.
    */
   void SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse,
-                              CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config, unsigned short iMesh = 999);
+                              CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config);
 
   /*!
    * \brief Initialize the adjoint solution using the primal problem.
