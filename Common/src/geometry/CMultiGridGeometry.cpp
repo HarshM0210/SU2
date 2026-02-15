@@ -29,12 +29,9 @@
 #include "../../include/geometry/CMultiGridQueue.hpp"
 #include "../../include/toolboxes/printing_toolbox.hpp"
 #include "../../../Common/include/toolboxes/geometry_toolbox.hpp"
-#include <cmath>
-#include <unordered_map>
-#include <climits>
+//#include <cmath>
 #include <iostream>
 #include <iomanip>
-#include <cstdlib>
 #include <map>
 
 CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, unsigned short iMesh) : CGeometry() {
