@@ -499,10 +499,10 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
 
 #ifdef HAVE_MPI
   /*--- Reset halo point parents before MPI agglomeration.
-   This is critical for multi-level multigrid: when creating level N from level N-1,
-   the fine grid (level N-1) already has Parent_CV set from when it was created from level N-2.
+   When creating level N from level N-1, the fine grid (level N-1)
+   already has Parent_CV set from when it was created from level N-2.
    Those parent indices point to level N, but when creating level N+1, they would be
-   incorrectly interpreted as level N+1 indices. Resetting ensures clean agglomeration. ---*/
+   incorrectly interpreted as level N+1 indices. ---*/
 
   for (auto iPoint = fine_grid->GetnPointDomain(); iPoint < fine_grid->GetnPoint(); iPoint++) {
     fine_grid->nodes->SetParent_CV(iPoint, std::numeric_limits<unsigned long>::max());
@@ -606,7 +606,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           }
         }
 
-
         Children_Local[iVertex] = fine_grid->vertex[MarkerR][iVertex]->GetNode();
       }
 
@@ -634,8 +633,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           continue;
         }
 
-        /*--- First assignment for this halo point - proceed with agglomeration ---*/
-
         /*--- Append to existing children, don't overwrite ---*/
         auto existing_children_count = nodes->GetnChildren_CV(iPoint_Coarse);
 
@@ -656,7 +653,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
   nPoint = Index_CoarseCV;
 
   /*--- Console output with the summary of the agglomeration ---*/
-  // nijso: do not include halo points in the count
   unsigned long nPointFine = fine_grid->GetnPointDomain();
   unsigned long Global_nPointCoarse, Global_nPointFine;
 
