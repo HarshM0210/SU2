@@ -53,7 +53,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
    i.e. consider up to neighbors of neighbors.
    For other levels this information is propagated down during their construction. ---*/
 
-   if (iMesh == MESH_1) {
+  if (iMesh == MESH_1) {
     for (auto iPoint = 0ul; iPoint < fine_grid->GetnPoint(); iPoint++)
       fine_grid->nodes->SetAgglomerate_Indirect(iPoint, false);
 
@@ -170,10 +170,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         /*--- Note that in 2D, this is a corner and we do not agglomerate unless one of them is SEND_RECEIVE. ---*/
         /*--- In 3D, we agglomerate if the 2 markers are the same. ---*/
         if (counter == 2) {
-
           if (nDim == 2) {
-             agglomerate_seed = ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
-                                 (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE));
+            agglomerate_seed = ((config->GetMarker_All_KindBC(copy_marker[0]) == SEND_RECEIVE) ||
+                                (config->GetMarker_All_KindBC(copy_marker[1]) == SEND_RECEIVE));
           }
           /*--- agglomerate if both markers are the same. ---*/
           if (nDim == 3) agglomerate_seed = (copy_marker[0] == copy_marker[1]);
@@ -642,7 +641,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         nodes->SetDomain(iPoint_Coarse, false);
         nSuccess++;
       }
-
     }
   }
 
@@ -789,7 +787,8 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
         // note that this should be the same marker id, not just the same marker type.
         if ((marker_seed.size() == 1) && (copy_marker[0] == marker_seed[0])) agglomerate_CV = true;
 
-        // we also allow agglomeration if the seed has 2 markers, one of them is the same as the candidate, and the other is a send-receive marker.
+        // we also allow agglomeration if the seed has 2 markers, one of them is the same as the candidate, and the
+        // other is a send-receive marker.
         if ((marker_seed.size() == 2) && ((copy_marker[0] == marker_seed[0]) || (copy_marker[0] == marker_seed[1]))) {
           // check that the other marker is a send-receive marker
           unsigned short other_marker = (copy_marker[0] == marker_seed[0]) ? marker_seed[1] : marker_seed[0];
@@ -797,7 +796,6 @@ bool CMultiGridGeometry::SetBoundAgglomeration(unsigned long CVPoint, vector<sho
             agglomerate_CV = true;
           }
         }
-
       }
 
       /*--- If there are two markers in the vertex that is going to be aglomerated ---*/
