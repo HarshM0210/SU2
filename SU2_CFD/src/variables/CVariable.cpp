@@ -92,11 +92,6 @@ void CVariable::Set_Solution() {
   parallelCopy(Solution_Old.size(), Solution_Old.data(), Solution.data());
 }
 
-void CVariable::SwapSolutionWithOld() {
-  assert(Solution.size() == Solution_Old.size());
-  std::swap(Solution, Solution_Old);
-}
-
 void CVariable::Set_Solution_time_n() {
   assert(Solution_time_n.size() == Solution.size());
   parallelCopy(Solution.size(), Solution.data(), Solution_time_n.data());

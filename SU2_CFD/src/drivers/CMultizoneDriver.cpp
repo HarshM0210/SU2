@@ -462,36 +462,6 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
 
   StartTime = SU2_MPI::Wtime();
 
-  /*--- When stopping due to max_time with second-order unsteady time stepping, we need to write
-   *    both the previous timestep (N-1) and current timestep (N) for proper restart capability. ---*/
-  if (TimeIter > 0) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      auto* config = config_container[iZone];
-      if (!config->GetTime_Domain() || config->GetTime_Marching() != TIME_MARCHING::DT_STEPPING_2ND) continue;
-      
-      const su2double cur_time = output_container[iZone]->GetHistoryFieldValue("CUR_TIME");
-      const su2double max_time = config->GetMax_Time();
-      const bool final_time_reached = cur_time >= max_time;
-      
-      if (!final_time_reached) continue;
-      
-      bool write_restart = false;
-      const auto* volFiles = config->GetVolumeOutputFiles();
-      for (unsigned short iFile = 0; iFile < config->GetnVolumeOutputFiles(); iFile++) {
-        const auto fmt = volFiles[iFile];
-        if (fmt == OUTPUT_TYPE::RESTART_ASCII || fmt == OUTPUT_TYPE::RESTART_BINARY || fmt == OUTPUT_TYPE::CSV) {
-          write_restart = true;
-          break;
-        }
-      }
-      if (write_restart) {
-        WriteUnsteadyRestartPreviousStep(geometry_container[iZone][INST_0][MESH_0], config,
-                                         solver_container[iZone][INST_0][MESH_0],
-                                         output_container[iZone], TimeIter);
-      }
-    }
-  }
-
   bool wrote_files = false;
 
   for (iZone = 0; iZone < nZone; iZone++){

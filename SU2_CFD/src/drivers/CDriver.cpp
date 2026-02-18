@@ -1155,26 +1155,6 @@ void CDriver::RestartSolver(CSolver ***solver, CGeometry **geometry,
 
 }
 
-void CDriver::WriteUnsteadyRestartPreviousStep(CGeometry* geometry, CConfig* config, CSolver** solver,
-                                                COutput* output, unsigned long TimeIter) {
-
-  /*--- Swap Solution and Solution_Old so output writes the previous timestep. ---*/
-  for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-    auto* sol = solver[iSol];
-    if (sol && !sol->GetAdjoint() && sol->GetNodes()) sol->GetNodes()->SwapSolutionWithOld();
-  }
-
-  config->SetTimeIter(TimeIter - 1);
-  output->SetResultFiles(geometry, config, solver, TimeIter - 1, true, true);
-  config->SetTimeIter(TimeIter);
-
-  /*--- Swap back to restore current solution. ---*/
-  for (auto iSol = 0u; iSol < MAX_SOLS; ++iSol) {
-    auto* sol = solver[iSol];
-    if (sol && !sol->GetAdjoint() && sol->GetNodes()) sol->GetNodes()->SwapSolutionWithOld();
-  }
-}
-
 void CDriver::FinalizeSolver(CSolver ****solver, CGeometry **geometry,
                                     CConfig *config, unsigned short val_iInst) {
 

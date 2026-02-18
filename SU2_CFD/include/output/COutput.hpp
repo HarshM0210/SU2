@@ -95,6 +95,7 @@ protected:
   ofstream histFile;        /*!< \brief Output file stream for the history */
 
   bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
+  bool maxTimeDelayActive;  /*! \brief: Flag for delaying stop at max_time with 2nd order time stepping. */
 
   /** \brief Enum to identify the screen output format. */
   enum class ScreenOutputFormat {
@@ -595,7 +596,7 @@ public:
    * \return <TRUE> if output files have been written to disk.
    */
   bool SetResultFiles(CGeometry *geometry, CConfig *config, CSolver** solver_container,
-                       unsigned long iter, bool force_writing = false, bool write_restart_only = false);
+                       unsigned long iter, bool force_writing = false);
 
   /*!
    * \brief Get convergence time convergence of the specified windowed-time-averaged ouput of the problem.
