@@ -488,12 +488,18 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
-    /*--- Get current CFL values ---*/
+    /*--- Get current CFL values
+          Read in shared scope since all threads need the same values, but ensure thread safety ---*/
     su2double CFL_fine = config->GetCFL(iMesh);
     su2double CFL_coarse_current = config->GetCFL(iMesh+1);
 
     /*--- Compute adaptive CFL for coarse grid ---*/
     su2double CFL_coarse_new = computeMultigridCFL(config, solver_coarse, geometry_coarse, iMesh, CFL_fine, CFL_coarse_current);
+
+    /*--- Explicit barrier to ensure all threads see the updated CFL from computeMultigridCFL
+          before proceeding. This prevents data races where threads at different recursion depths
+          might read stale CFL values during nested MultiGrid_Cycle calls. ---*/
+    SU2_OMP_BARRIER
 
     /*--- Update LocalCFL at each coarse grid point ---*/
     SU2_OMP_FOR_STAT(roundUpDiv(geometry_coarse->GetnPoint(), omp_get_num_threads()))
@@ -502,31 +508,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
     }
     END_SU2_OMP_FOR
 
-    /*--- Output monitoring information periodically ---*/
-//
-////#ifdef HAVE_MPI
-////    /*--- Synchronize all ranks before output to ensure consistent state ---*/
-////    SU2_MPI::Barrier(SU2_MPI::GetComm());
-////#endif
-/*
-    if (SU2_MPI::GetRank() == 0 && iter % 1 == 0) {
-      bool cfl_increased = (new_coeff < current_coeff);  // Lower coeff = higher CFL
-      bool cfl_decreased = (new_coeff > current_coeff);  // Higher coeff = lower CFL
-      string action = "unchanged";
-      if (cfl_increased) action = "increased";
-      else if (cfl_decreased) action = "decreased";
-
-      su2double percent_reduction = (1.0 - ratio_for_display) * 100.0;
-
-      cout << "  MG Level " << iMesh+1
-           << ", iter = " << iter
-           << ", percent reduction = " << percent_reduction
-           << ", action = " << action
-           << ", oscillation = " << (oscillation_detected ? "yes" : "no")
-           << ", coeff = " << new_coeff << " (was " << current_coeff << ")"
-           << ", CFL = " << CFL_coarse_new << endl;
-    }
-*/
     SmoothProlongated_Correction(RunTime_EqSystem, solver_fine, geometry_fine, config->GetMG_CorrecSmooth(iMesh), 1.25, config);
 
     SetProlongated_Correction(solver_fine, geometry_fine, config, iMesh);
