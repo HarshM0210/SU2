@@ -27,7 +27,6 @@
 
 #include "../../include/variables/CVariable.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
-#include <utility>
 
 CVariable::CVariable(unsigned long npoint, unsigned long nvar, const CConfig *config) {
 

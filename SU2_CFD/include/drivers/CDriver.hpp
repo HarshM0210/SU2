@@ -167,7 +167,6 @@ class CDriver : public CDriverBase {
   void RestartSolver(CSolver*** solver, CGeometry** geometry, CConfig* config, bool update_geo);
 
   /*!
-  /*!
    * \brief Definition and allocation of all solution classes.
    * \param[in] solver - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
