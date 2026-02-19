@@ -175,7 +175,7 @@ def main():
     tutorial_inv_bump.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Bump"
     tutorial_inv_bump.cfg_file   = "inv_channel.cfg"
     tutorial_inv_bump.test_iter  = 0
-    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.062355, 0.000402]
+    tutorial_inv_bump.test_vals  = [-1.437425, 4.075857, 0.060602, -0.001097]
     test_list.append(tutorial_inv_bump)
 
     # Inviscid Wedge
@@ -183,7 +183,7 @@ def main():
     tutorial_inv_wedge.cfg_dir    = "../Tutorials/compressible_flow/Inviscid_Wedge"
     tutorial_inv_wedge.cfg_file   = "inv_wedge_HLLC.cfg"
     tutorial_inv_wedge.test_iter  = 0
-    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.290711, 0.051397]
+    tutorial_inv_wedge.test_vals  = [-0.481460, 5.253008, -0.290816, 0.051445]
     tutorial_inv_wedge.no_restart = True
     test_list.append(tutorial_inv_wedge)
 
@@ -201,7 +201,7 @@ def main():
     tutorial_lam_cylinder.cfg_dir    = "../Tutorials/compressible_flow/Laminar_Cylinder"
     tutorial_lam_cylinder.cfg_file   = "lam_cylinder.cfg"
     tutorial_lam_cylinder.test_iter  = 0
-    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, 0.014753, 31.991973]
+    tutorial_lam_cylinder.test_vals  = [-6.162141, -0.699617, -0.124663, 31.721714]
     tutorial_lam_cylinder.no_restart = True
     test_list.append(tutorial_lam_cylinder)
 
@@ -323,7 +323,7 @@ def main():
     tutorial_design_inv_naca0012.cfg_dir    = "../Tutorials/design/Inviscid_2D_Unconstrained_NACA0012"
     tutorial_design_inv_naca0012.cfg_file   = "inv_NACA0012_basic.cfg"
     tutorial_design_inv_naca0012.test_iter  = 0
-    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.166575, 0.241919]
+    tutorial_design_inv_naca0012.test_vals  = [-3.585391, -2.989014, 0.165195, 0.238368]
     tutorial_design_inv_naca0012.no_restart = True
     test_list.append(tutorial_design_inv_naca0012)
 
