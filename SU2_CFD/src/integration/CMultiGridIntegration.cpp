@@ -488,24 +488,18 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
-    /*--- Get current CFL values - only master thread reads to avoid concurrent access races.
-          All other threads wait at barrier to get the same cached values. ---*/
-    su2double CFL_fine = 0.0;
-    su2double CFL_coarse_current = 0.0;
-    su2double CFL_coarse_new = 0.0;
+    /*--- Get current CFL values
+          Read in shared scope since all threads need the same values, but ensure thread safety ---*/
+    su2double CFL_fine = config->GetCFL(iMesh);
+    su2double CFL_coarse_current = config->GetCFL(iMesh+1);
 
-    SU2_OMP_MASTER
-    {
-      CFL_fine = config->GetCFL(iMesh);
-      CFL_coarse_current = config->GetCFL(iMesh+1);
 
-      /*--- Compute adaptive CFL for coarse grid (master thread only) ---*/
-      CFL_coarse_new = computeMultigridCFL(config, solver_coarse, geometry_coarse, iMesh, CFL_fine, CFL_coarse_current);
-    }
-    END_SU2_OMP_MASTER
+    /*--- Compute adaptive CFL for coarse grid ---*/
+    su2double CFL_coarse_new = computeMultigridCFL(config, solver_coarse, geometry_coarse, iMesh, CFL_fine, CFL_coarse_current);
 
-    /*--- Barrier ensures all threads see the CFL values read/written by master thread
-          before proceeding. This prevents data races during nested MultiGrid_Cycle calls. ---*/
+    /*--- Explicit barrier to ensure all threads see the updated CFL from computeMultigridCFL
+          before proceeding. This prevents data races where threads at different recursion depths
+          might read stale CFL values during nested MultiGrid_Cycle calls. ---*/
     SU2_OMP_BARRIER
 
     /*--- Update LocalCFL at each coarse grid point ---*/
