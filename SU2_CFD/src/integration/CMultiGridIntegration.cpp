@@ -408,13 +408,11 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
       /*--- Time integration, update solution using the old solution plus the solution increment.
-           Wrap in SAFE_GLOBAL_ACCESS so only the master thread enters the implicit linear solver.
-           This prevents a data race where all cooperative OMP threads simultaneously call
-           SU2_MPI::Error when FGMRES diverges (nestedParallel=false when omp_in_parallel()). ---*/
-      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-        Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-      }
-      END_SU2_OMP_SAFE_GLOBAL_ACCESS
+           Must be called from ALL threads cooperatively: CSysSolve::Solve uses internal
+           SU2_OMP_BARRIER / SU2_OMP_FOR constructs that require participation of all threads.
+           Wrapping in SU2_OMP_MASTER would park non-master threads at the outer barrier,
+           starving the inner barriers and causing data races / deadlocks. ---*/
+      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
 
@@ -496,19 +494,21 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     /*--- Read current CFL values in master thread to ensure thread-safe access.
           Extract passive values to avoid AD tape recording in parallel region. ---*/
-    passivedouble CFL_fine_passive = 0.0;
-    passivedouble CFL_coarse_current_passive = 0.0;
+    // passivedouble CFL_fine_passive = 0.0;
+    // passivedouble CFL_coarse_current_passive = 0.0;
 
-    SU2_OMP_MASTER
-    {
-      CFL_fine_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh));
-      CFL_coarse_current_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh+1));
-    }
-    END_SU2_OMP_MASTER
+    // SU2_OMP_MASTER
+    // {
+    //   CFL_fine_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh));
+    //   CFL_coarse_current_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh+1));
+    // }
+    // END_SU2_OMP_MASTER
     /*--- Implicit barrier here ensures all threads see the CFL values before proceeding ---*/
 
     /*--- Compute adaptive CFL for coarse grid using passive values (no tape recording) ---*/
-    passivedouble CFL_coarse_new = computeMultigridCFL(config, solver_coarse, geometry_coarse, iMesh, CFL_fine_passive, CFL_coarse_current_passive);
+
+    //nijso: just put a fixed value to see if the omp problem is really here...
+    passivedouble CFL_coarse_new = 1.0; //computeMultigridCFL(config, solver_coarse, geometry_coarse, iMesh, CFL_fine_passive, CFL_coarse_current_passive);
 
     /*--- Explicit barrier to ensure all threads see the updated CFL from computeMultigridCFL
           before proceeding. This prevents data races where threads at different recursion depths
@@ -548,11 +548,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
         Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
-        /*--- Same thread-safety guard as presmoothing: only master enters implicit linear solve. ---*/
-        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
-          Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-        }
-        END_SU2_OMP_SAFE_GLOBAL_ACCESS
+        /*--- Must be called cooperatively from all threads (see presmooth comment). ---*/
+        Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
 
         solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
 
@@ -602,10 +599,6 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
   delete [] Solution;
 
-  /*--- Ensure all threads complete before MPI communication ---*/
-  //nijso: check if this can be removed now.
-  //SU2_OMP_BARRIER
-
   /*--- Enforce Euler wall BC on corrections by projecting to tangent plane ---*/
   ProjectEulerWallToTangentPlane(geo_coarse, config, sol_coarse, true);
 
@@ -633,10 +626,6 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
 
   sol_coarse->InitiateComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_OLD);
   sol_coarse->CompleteComms(geo_coarse, config, MPI_QUANTITIES::SOLUTION_OLD);
-
-  /*--- Ensure MPI completion visible to all threads ---*/
-  // nijso: remove?
-  //SU2_OMP_BARRIER
 
   SU2_OMP_FOR_STAT(roundUpDiv(geo_coarse->GetnPointDomain(), omp_get_num_threads()))
   for (auto Point_Coarse = 0ul; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
