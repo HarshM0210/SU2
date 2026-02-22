@@ -407,19 +407,20 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
-      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-
-      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+      /*--- Time integration, update solution using the old solution plus the solution increment.
+           Wrap in SAFE_GLOBAL_ACCESS so only the master thread enters the implicit linear solver.
+           This prevents a data race where all cooperative OMP threads simultaneously call
+           SU2_MPI::Error when FGMRES diverges (nestedParallel=false when omp_in_parallel()). ---*/
+      BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+        Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+      }
+      END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
 
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
 
     }
-
-    /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
-    solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-    solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
 
   }
 
@@ -547,16 +548,15 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
         Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
 
-        Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+        /*--- Same thread-safety guard as presmoothing: only master enters implicit linear solve. ---*/
+        BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS {
+          Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+        }
+        END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
         solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
 
       }
-
-      /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
-      // nijso: check if this can be removed now.
-      //solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-      //solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
 
     }
   }
