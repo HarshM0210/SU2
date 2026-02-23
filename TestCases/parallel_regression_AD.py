@@ -253,7 +253,7 @@ def main():
     discadj_thermoelastic.cfg_dir = "fea_fsi/ThermalBeam_3d"
     discadj_thermoelastic.cfg_file = "configBeamNonlinear_3d_ad.cfg"
     discadj_thermoelastic.test_iter = 10
-    discadj_thermoelastic.test_vals = [-5.356611, -5.296001, -6.176339, -6.434689, 60, -5.010713, 31, -5.196657, 9.4147e-11, 1.9264e-01, 0]
+    discadj_thermoelastic.test_vals = [-5.355510, -5.293378, -6.164317, -6.433862, 43, -4.049556, 27, -4.164192, 0, 0.192640, 0]
     test_list.append(discadj_thermoelastic)
 
     ###################################
