@@ -97,6 +97,7 @@ protected:
   ofstream histFile;        /*!< \brief Output file stream for the history */
 
   bool cauchyTimeConverged; /*! \brief: Flag indicating that solver is already converged. Needed for writing restart files. */
+  bool maxTimeDelayActive;  /*! \brief: Flag for delaying stop at max_time with 2nd order time stepping. */
 
   /** \brief Enum to identify the screen output format. */
   enum class ScreenOutputFormat {
