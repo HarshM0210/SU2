@@ -56,6 +56,7 @@ class CFileWriter;
 class CParallelDataSorter;
 class CConfig;
 class CHeatOutput;
+class CAdjHeatOutput;
 
 using namespace std;
 
@@ -67,6 +68,7 @@ using namespace std;
 class COutput {
 protected:
   friend class CHeatOutput;
+  friend class CAdjHeatOutput;
 
   /*----------------------------- General ----------------------------*/
 
