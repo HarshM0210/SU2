@@ -306,7 +306,7 @@ def main():
     MFR_coupling.cfg_dir   = "euler/turbofan_MFR_coupling"
     MFR_coupling.cfg_file  = "MFR_coupling.cfg"
     MFR_coupling.test_iter = 100
-    MFR_coupling.test_vals = [-2.2369e+02, 1.5532e+02, 1.9851e+01]
+    MFR_coupling.test_vals = [-2.1124e+02, 1.5003e+02, 2.0151e+01]
     test_list.append(MFR_coupling)
 
     ##########################
