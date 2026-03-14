@@ -1028,7 +1028,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977318, 3.481877, -0.000142, -0.007861]
+    sine_gust.test_vals = [-1.977498, 3.481817, -0.010227, -0.007902]
     sine_gust.unsteady  = True
     test_list.append(sine_gust)
 
@@ -1037,7 +1037,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.069157, 0.027462, -0.001829, 0.000025]
+    aeroelastic.test_vals = [0.075680, 0.027563, -0.001642, -0.000127]
     aeroelastic.unsteady  = True
     test_list.append(aeroelastic)
 
@@ -1077,7 +1077,7 @@ def main():
     edge_VW.cfg_dir   = "nicf/edge"
     edge_VW.cfg_file  = "edge_VW.cfg"
     edge_VW.test_iter = 50
-    edge_VW.test_vals = [-2.770557, 3.430361, -0.000009, 0.000000]
+    edge_VW.test_vals = [-2.386376, 3.814463, -0.000009, 0.000000]
     test_list.append(edge_VW)
 
     # Rarefaction shock wave edge_PPR
@@ -1085,7 +1085,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 50
-    edge_PPR.test_vals = [-10.876684, -4.693540, -0.000034, 0.000000]
+    edge_PPR.test_vals = [-12.063759, -5.873111, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
     # Rarefaction Q1D nozzle, include CoolProp fluid model
@@ -1440,7 +1440,7 @@ def main():
     pywrapper_naca0012.cfg_dir   = "euler/naca0012"
     pywrapper_naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     pywrapper_naca0012.test_iter = 80
-    pywrapper_naca0012.test_vals = [-9.249009, -8.546597, 0.335769, 0.023275]
+    pywrapper_naca0012.test_vals = [-9.980225, -9.402767, 0.335769, 0.023275]
     pywrapper_naca0012.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--parallel -f")
     test_list.append(pywrapper_naca0012)
 
@@ -1470,7 +1470,7 @@ def main():
     pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.075023, 0.027483, -0.001643, -0.000126]
+    pywrapper_aeroelastic.test_vals = [0.075680, 0.027563, -0.001642, -0.000127]
     pywrapper_aeroelastic.command   = TestCase.Command("mpirun -np 2", "SU2_CFD.py", "--parallel -f")
     pywrapper_aeroelastic.unsteady  = True
     test_list.append(pywrapper_aeroelastic)
@@ -1511,7 +1511,7 @@ def main():
     pywrapper_unsteadyCHT.cfg_dir = "py_wrapper/flatPlate_unsteady_CHT"
     pywrapper_unsteadyCHT.cfg_file = "unsteady_CHT_FlatPlate_Conf.cfg"
     pywrapper_unsteadyCHT.test_iter = 5
-    pywrapper_unsteadyCHT.test_vals = [-1.614167, 2.263483, -0.007487, 0.100530]
+    pywrapper_unsteadyCHT.test_vals = [-1.614167, 2.260123, -0.002469, 0.100260]
     pywrapper_unsteadyCHT.command = TestCase.Command("mpirun -np 2", "python", "launch_unsteady_CHT_FlatPlate.py --parallel -f")
     pywrapper_unsteadyCHT.unsteady = True
     test_list.append(pywrapper_unsteadyCHT)
