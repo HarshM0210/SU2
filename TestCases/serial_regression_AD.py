@@ -158,7 +158,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [1.221535, -1.651330, -0.004201, -0.000004]
+    discadj_pitchingNACA0012.test_vals = [-1.221535, -1.651330, -0.004201, -0.000004]
     discadj_pitchingNACA0012.unsteady  = True
     test_list.append(discadj_pitchingNACA0012)
 

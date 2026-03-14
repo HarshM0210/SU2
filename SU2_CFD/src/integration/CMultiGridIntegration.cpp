@@ -38,6 +38,8 @@ namespace {
  */
 void ProjectEulerWallToTangentPlane(CGeometry* geo_coarse, const CConfig* config, CSolver* sol_coarse,
                                     bool use_solution_old) {
+  const bool grid_movement = config->GetGrid_Movement();
+
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != EULER_WALL) continue;
 
@@ -66,13 +68,24 @@ void ProjectEulerWallToTangentPlane(CGeometry* geo_coarse, const CConfig* config
         sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse) :
         sol_coarse->GetNodes()->GetSolution(Point_Coarse);
 
-      /*--- Compute normal component of momentum (v·n or correction·n) ---*/
+      /*--- Compute normal component of momentum.
+       *    For grid movement (e.g. rotating frame) and when projecting the solution
+       *    (not corrections), compute the normal component of the RELATIVE momentum
+       *    (rho*v - rho*v_grid).n to enforce (v - v_grid).n = 0.
+       *    This matches the fine-grid Euler/symmetry BC (BC_Sym_Plane). ---*/
       su2double momentum_n = 0.0;
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         momentum_n += solution_coarse[iDim + 1] * UnitNormal[iDim];
       }
+      if (grid_movement && !use_solution_old) {
+        const su2double* GridVel = geo_coarse->nodes->GetGridVel(Point_Coarse);
+        su2double rho = solution_coarse[0];
+        for (auto iDim = 0u; iDim < nDim; iDim++) {
+          momentum_n -= rho * GridVel[iDim] * UnitNormal[iDim];
+        }
+      }
 
-      /*--- Project to tangent plane: solution_coarse -= (solution_coarse·n)n ---*/
+      /*--- Project to tangent plane: solution_coarse -= (momentum_n) * n ---*/
       for (auto iDim = 0u; iDim < nDim; iDim++) {
         solution_coarse[iDim + 1] -= momentum_n * UnitNormal[iDim];
       }
