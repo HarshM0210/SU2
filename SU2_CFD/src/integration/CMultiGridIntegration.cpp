@@ -84,17 +84,15 @@ void ProjectEulerWallToTangentPlane(CGeometry* geo_coarse, const CConfig* config
 
 passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
                                                           unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current) {
+  /*--- Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS). ---*/
+
   passivedouble current_coeff = CFL_coarse_current / CFL_fine;
 
   /*--- Adaptive CFL using Exponential Moving Average (EMA) ---*/
-  /*--- All operations performed in master thread for determinism ---*/
   constexpr int AVG_WINDOW = 5;
 
-  /*--- Only master thread performs CFL adaptation to ensure deterministic behavior ---*/
-  /*--- All adaptive CFL state and computation must be done by a single thread ---*/
   passivedouble CFL_coarse_new = CFL_coarse_current; // Default: keep current value
 
-  SU2_OMP_MASTER
   {
     /*--- Get global iteration count first ---*/
     unsigned long current_iter;
@@ -228,8 +226,6 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
     config->SetCFL(iMesh+1, CFL_coarse_new);
     AD::EndPassive(wasActive);
   }
-  END_SU2_OMP_MASTER
-  /*--- Implicit barrier at end of master region ensures all threads see updated CFL ---*/
 
   return CFL_coarse_new;
 }
@@ -489,31 +485,17 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 
     GetProlongated_Correction(RunTime_EqSystem, solver_fine, solver_coarse, geometry_fine, geometry_coarse, config);
 
-    /*--- Synchronize before reading CFL to avoid race with concurrent writes from computeMultigridCFL ---*/
-    SU2_OMP_BARRIER
-
-    /*--- Read current CFL values in master thread to ensure thread-safe access.
-          Extract passive values to avoid AD tape recording in parallel region. ---*/
-    passivedouble CFL_fine_passive = 0.0;
-    passivedouble CFL_coarse_current_passive = 0.0;
-
-    SU2_OMP_MASTER
+    /*--- Compute adaptive CFL for coarse grid (master only, with barriers for synchronization) ---*/
+    BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS
     {
-      CFL_fine_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh));
-      CFL_coarse_current_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh+1));
+      passivedouble CFL_fine_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh));
+      passivedouble CFL_coarse_current_passive = SU2_TYPE::GetValue(config->GetCFL(iMesh+1));
+      computeMultigridCFL(config, solver_coarse, geometry_coarse, iMesh, CFL_fine_passive, CFL_coarse_current_passive);
     }
-    END_SU2_OMP_MASTER
-    /*--- Implicit barrier here ensures all threads see the CFL values before proceeding ---*/
+    END_SU2_OMP_SAFE_GLOBAL_ACCESS
 
-    /*--- Compute adaptive CFL for coarse grid using passive values (no tape recording) ---*/
-
-    //nijso: just put a fixed value to see if the omp problem is really here...
-    passivedouble CFL_coarse_new = computeMultigridCFL(config, solver_coarse, geometry_coarse, iMesh, CFL_fine_passive, CFL_coarse_current_passive);
-
-    /*--- Explicit barrier to ensure all threads see the updated CFL from computeMultigridCFL
-          before proceeding. This prevents data races where threads at different recursion depths
-          might read stale CFL values during nested MultiGrid_Cycle calls. ---*/
-    SU2_OMP_BARRIER
+    /*--- All threads read the CFL updated by master (safe after trailing barrier above) ---*/
+    const passivedouble CFL_coarse_new = SU2_TYPE::GetValue(config->GetCFL(iMesh+1));
 
     /*--- Update LocalCFL at each coarse grid point ---*/
     SU2_OMP_FOR_STAT(roundUpDiv(geometry_coarse->GetnPoint(), omp_get_num_threads()))
