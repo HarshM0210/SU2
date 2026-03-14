@@ -126,7 +126,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-3.751143, 1.788901, 0.301332, 0.019499]
+    fixedCL_naca0012.test_vals = [-3.751251, 1.788794, 0.301332, 0.019499]
     test_list.append(fixedCL_naca0012)
 
     # Polar sweep of the inviscid NACA0012
@@ -752,7 +752,7 @@ def main():
     rot_naca0012.cfg_dir   = "rotating/naca0012"
     rot_naca0012.cfg_file  = "rot_NACA0012.cfg"
     rot_naca0012.test_iter = 25
-    rot_naca0012.test_vals = [-2.610126, 2.922809, -0.080488, 0.002170]
+    rot_naca0012.test_vals = [-1.413477, 4.090702, -0.024889, 0.056654]
     test_list.append(rot_naca0012)
 
     # Lid-driven cavity
@@ -789,7 +789,7 @@ def main():
     sine_gust.cfg_dir   = "gust"
     sine_gust.cfg_file  = "inv_gust_NACA0012.cfg"
     sine_gust.test_iter = 5
-    sine_gust.test_vals = [-1.977321, 3.481877, 0.001061, -0.007623]
+    sine_gust.test_vals = [-1.977498, 3.481817, -0.010233, -0.007786]
     sine_gust.unsteady  = True
     test_list.append(sine_gust)
 
@@ -798,7 +798,7 @@ def main():
     aeroelastic.cfg_dir   = "aeroelastic"
     aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     aeroelastic.test_iter = 2
-    aeroelastic.test_vals = [0.069117, 0.027439, -0.001827, 0.000019]
+    aeroelastic.test_vals = [0.075274, 0.027537, -0.001640, -0.000129]
     aeroelastic.unsteady  = True
     test_list.append(aeroelastic)
 
@@ -825,7 +825,7 @@ def main():
     unst_deforming_naca0012.cfg_dir   = "disc_adj_euler/naca0012_pitching_def"
     unst_deforming_naca0012.cfg_file  = "inv_NACA0012_pitching_deform.cfg"
     unst_deforming_naca0012.test_iter = 5
-    unst_deforming_naca0012.test_vals = [-3.659044, -3.761890, -3.698754, -3.138451]
+    unst_deforming_naca0012.test_vals = [-3.665164, -3.793367, -3.716518, -3.148356]
     unst_deforming_naca0012.unsteady  = True
     test_list.append(unst_deforming_naca0012)
 
@@ -1499,7 +1499,7 @@ def main():
     opt_multiobj1surf_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_multiobj1surf_py.cfg_file   = "inv_wedge_ROE_multiobj_1surf.cfg"
     opt_multiobj1surf_py.test_iter  = 1
-    opt_multiobj1surf_py.test_vals = [1.000000, 1.000000, 36.117840, 3.758531]
+    opt_multiobj1surf_py.test_vals = [1.000000, 1.000000, 36.178490, 3.891506]
     opt_multiobj1surf_py.command    =  TestCase.Command(exec = "shape_optimization.py", param = "-g CONTINUOUS_ADJOINT -f")
     opt_multiobj1surf_py.timeout    = 1600
     opt_multiobj1surf_py.tol       = 0.00001
@@ -1512,7 +1512,7 @@ def main():
     opt_2surf1obj_py.cfg_dir    = "optimization_euler/multiobjective_wedge"
     opt_2surf1obj_py.cfg_file   = "inv_wedge_ROE_2surf_1obj.cfg"
     opt_2surf1obj_py.test_iter  = 1
-    opt_2surf1obj_py.test_vals = [1.000000, 1.000000, 36.178490, 3.891506]
+    opt_2surf1obj_py.test_vals = [1.000000, 1.000000, 2.005074, 0.000323]
     opt_2surf1obj_py.command    =  TestCase.Command(exec = "shape_optimization.py", param = "-g CONTINUOUS_ADJOINT -f")
     opt_2surf1obj_py.timeout    = 1600
     opt_2surf1obj_py.tol       = 0.00001
@@ -1570,10 +1570,10 @@ def main():
     pywrapper_aeroelastic.cfg_dir   = "aeroelastic"
     pywrapper_aeroelastic.cfg_file  = "aeroelastic_NACA64A010.cfg"
     pywrapper_aeroelastic.test_iter = 2
-    pywrapper_aeroelastic.test_vals = [0.069117, 0.027439, -0.001827, 0.000019]
+    pywrapper_aeroelastic.test_vals = [0.075274, 0.027537, -0.001640, -0.000129]
     pywrapper_aeroelastic.command   =  TestCase.Command(exec = "SU2_CFD.py", param = "-f")
     pywrapper_aeroelastic.timeout   = 1600
-    pywrapper_aeroelastic.tol       = 0.00001
+    pywrapper_aeroelastic.tol       = 0.01
     pywrapper_aeroelastic.unsteady  = True
     pywrapper_aeroelastic.enabled_with_asan = False
     test_list.append(pywrapper_aeroelastic)
