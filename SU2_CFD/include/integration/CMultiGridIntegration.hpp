@@ -192,11 +192,14 @@ private:
   passivedouble computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
                                      unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current);
 
-  /*--- CFL adaptation state variables ---*/
+  /*--- CFL adaptation state variables.
+   *    These must be passivedouble: AD::Reset() clears the tape between adjoint recordings,
+   *    but class members survive. If these were su2double their stale AD indices would
+   *    reference the cleared tape, causing invalid memory access during the backward pass. ---*/
   static constexpr int MAX_MG_LEVELS = 10;
-  su2double current_avg[MAX_MG_LEVELS] = {};
-  su2double prev_avg[MAX_MG_LEVELS] = {};
-  su2double last_res[MAX_MG_LEVELS] = {};
+  passivedouble current_avg[MAX_MG_LEVELS] = {};
+  passivedouble prev_avg[MAX_MG_LEVELS] = {};
+  passivedouble last_res[MAX_MG_LEVELS] = {};
   bool last_was_increase[MAX_MG_LEVELS] = {};
   int oscillation_count[MAX_MG_LEVELS] = {};
   unsigned long last_check_iter[MAX_MG_LEVELS] = {};

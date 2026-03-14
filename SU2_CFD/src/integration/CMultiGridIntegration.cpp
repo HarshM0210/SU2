@@ -133,21 +133,23 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
     unsigned long iter = current_iter;
 
     /*--- Get sum of all RMS residuals for all variables (local to this rank) ---*/
+    /*--- Use su2double for MPI buffers (MeDiPack requires sizeof(su2double) per element ---*/
+    /*--- when MPI_DOUBLE is used, since convertDatatype maps it to AMPI_ADOUBLE). ---*/
     su2double rms_res_coarse_local = 0.0;
     for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
-      rms_res_coarse_local += solver_coarse->GetRes_RMS(iVar);
+      rms_res_coarse_local += SU2_TYPE::GetValue(solver_coarse->GetRes_RMS(iVar));
     }
 
     /*--- MPI synchronization: ensure all ranks use the same global residual value ---*/
     /*--- This is critical for consistent CFL adaptation across all ranks ---*/
-    su2double rms_res_coarse = rms_res_coarse_local;
+    passivedouble rms_res_coarse = SU2_TYPE::GetValue(rms_res_coarse_local);
 
     /*--- For coarse grids, residuals are not globally reduced by default ---*/
     /*--- We need to synchronize them for consistent adaptive CFL decisions ---*/
     if (geometry_coarse->GetMGLevel() > 0) {
       su2double rms_global_sum = 0.0;
       SU2_MPI::Allreduce(&rms_res_coarse_local, &rms_global_sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      rms_res_coarse = rms_global_sum / static_cast<su2double>(SU2_MPI::GetSize());
+      rms_res_coarse = SU2_TYPE::GetValue(rms_global_sum) / static_cast<passivedouble>(SU2_MPI::GetSize());
     }
 
     /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
@@ -196,7 +198,7 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
 
     /*--- Asymmetric adaptation for robustness ---*/
     if (prev_avg[lvl] > EPS) {
-      su2double ratio = current_avg[lvl] / prev_avg[lvl];
+      passivedouble ratio = current_avg[lvl] / prev_avg[lvl];
       bool sufficient_decrease = (ratio < MIN_REDUCTION_FACTOR);
       bool increasing_trend = (ratio >= 1.0);
 
@@ -231,7 +233,10 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
 
 #ifdef HAVE_MPI
     /*--- Ensure all ranks use the same CFL value (broadcast from rank 0) ---*/
-    SU2_MPI::Bcast(&CFL_coarse_new, 1, MPI_DOUBLE, 0, SU2_MPI::GetComm());
+    /*--- Use su2double buffer for MeDiPack compatibility. ---*/
+    su2double CFL_bcast = CFL_coarse_new;
+    SU2_MPI::Bcast(&CFL_bcast, 1, MPI_DOUBLE, 0, SU2_MPI::GetComm());
+    CFL_coarse_new = SU2_TYPE::GetValue(CFL_bcast);
 #endif
 
     /*--- Update the shared config object (wrapped to prevent tape recording) ---*/

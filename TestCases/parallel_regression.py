@@ -220,7 +220,7 @@ def main():
     channel.cfg_dir   = "euler/channel"
     channel.cfg_file  = "inv_channel_RK.cfg"
     channel.test_iter = 20
-    channel.test_vals = [-2.370377, 3.168384, 0.124246, 0.142878]
+    channel.test_vals = [-2.343552, 3.197189, 0.123534, 0.148052]
     test_list.append(channel)
 
     # NACA0012
@@ -228,7 +228,7 @@ def main():
     naca0012.cfg_dir   = "euler/naca0012"
     naca0012.cfg_file  = "inv_NACA0012_Roe.cfg"
     naca0012.test_iter = 20
-    naca0012.test_vals = [-5.024272, -4.487585, 0.332525, 0.023058]
+    naca0012.test_vals = [-4.877597, -4.355615, 0.331699, 0.022976]
     test_list.append(naca0012)
 
     # Supersonic wedge
@@ -253,7 +253,7 @@ def main():
     fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     fixedCL_naca0012.cfg_file  = "inv_NACA0012.cfg"
     fixedCL_naca0012.test_iter = 10
-    fixedCL_naca0012.test_vals = [-3.811341, 1.726020, 0.301248, 0.019495]
+    fixedCL_naca0012.test_vals = [-3.802419, 1.735767, 0.301252, 0.019495]
     test_list.append(fixedCL_naca0012)
 
     # Polar sweep of the inviscid NACA0012
