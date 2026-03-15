@@ -3057,7 +3057,27 @@ public:
    * \brief Get the number of Runge-Kutta steps.
    * \return Number of Runge-Kutta steps.
    */
-  unsigned short GetnRKStep(void) const { return nRKStep; }
+  unsigned short GetnRKStep(void) const {
+
+    unsigned short iRKLimit = 1;
+
+    switch (GetKind_TimeIntScheme()) {
+      case RUNGE_KUTTA_EXPLICIT:
+        iRKLimit = GetnRKStep();
+        break;
+      case CLASSICAL_RK4_EXPLICIT:
+        iRKLimit = 4;
+        break;
+      case EULER_EXPLICIT:
+      case EULER_IMPLICIT:
+        iRKLimit = 1;
+        break;
+      default:
+        iRKLimit = 1;
+        break;
+    }
+  return iRKLimit;
+  }
 
   /*!
    * \brief Get the number of time levels for time accurate local time stepping.
