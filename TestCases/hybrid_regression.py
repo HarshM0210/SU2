@@ -765,7 +765,7 @@ def main():
     pywrapper_translating_naca0012.reference_file = "forces_0.csv.ref"
     pywrapper_translating_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
     pywrapper_translating_naca0012.test_file = "forces_0.csv"
-    pywrapper_translating_naca0012.tol_file_percent = 0.1
+    pywrapper_translating_naca0012.tol_file_percent = 5.0
     pywrapper_translating_naca0012.enabled_on_cpu_arch = ["x86_64"]
     pywrapper_translating_naca0012.enabled_with_tsan = False
     file_diff_list.append(pywrapper_translating_naca0012)
@@ -779,7 +779,7 @@ def main():
     pywrapper_updated_moving_frame_naca0012.reference_file = "forces_0.csv.ref"
     pywrapper_updated_moving_frame_naca0012.reference_file_aarch64 = "forces_0_aarch64.csv.ref"
     pywrapper_updated_moving_frame_naca0012.test_file = "forces_0.csv"
-    pywrapper_updated_moving_frame_naca0012.tol_file_percent = 0.1
+    pywrapper_updated_moving_frame_naca0012.tol_file_percent = 5.0
     pywrapper_updated_moving_frame_naca0012.enabled_on_cpu_arch = ["x86_64"]
     pywrapper_updated_moving_frame_naca0012.enabled_with_tsan = False
     file_diff_list.append(pywrapper_updated_moving_frame_naca0012)

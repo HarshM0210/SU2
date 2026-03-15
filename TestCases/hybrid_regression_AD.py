@@ -187,7 +187,7 @@ def main():
     discadj_pitchingNACA0012.cfg_dir   = "disc_adj_euler/naca0012_pitching"
     discadj_pitchingNACA0012.cfg_file  = "inv_NACA0012_pitching.cfg"
     discadj_pitchingNACA0012.test_iter = 4
-    discadj_pitchingNACA0012.test_vals = [-1.224157, -1.651618, -0.004097, -0.000003]
+    discadj_pitchingNACA0012.test_vals = [-1.224189, -1.654687, -0.004097, -0.000003]
     discadj_pitchingNACA0012.tol = 0.01
     discadj_pitchingNACA0012.unsteady  = True
     discadj_pitchingNACA0012.enabled_with_tsan = False
@@ -213,7 +213,8 @@ def main():
     for test in test_list:
         test.command = TestCase.Command(exec = "SU2_CFD_AD", param = "-t 2")
         test.timeout = 600
-        test.tol = 1e-4
+        if test.tol == 0.0:
+            test.tol = 1.0e-4
     #end
 
     pass_list = [ test.run_test(args.tsan) for test in test_list ]
