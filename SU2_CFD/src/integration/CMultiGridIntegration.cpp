@@ -356,7 +356,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
   CConfig* config = config_container[iZone];
 
   const unsigned short Solver_Position = config->GetContainerPosition(RunTime_EqSystem);
-  const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
   const bool implicit = (config->GetKind_TimeIntScheme() == EULER_IMPLICIT);
 
   /*--- Shorter names to refer to fine grid entities. ---*/
