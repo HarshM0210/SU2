@@ -38,7 +38,7 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
                                                unsigned short iZone,
                                                unsigned short iInst) {
 
-  unsigned short iMesh, iStep, iLimit = 1;
+  unsigned short iMesh, iStep;
   unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short FinestMesh = config[iZone]->GetFinestMesh();
 
