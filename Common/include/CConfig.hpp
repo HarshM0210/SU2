@@ -3063,7 +3063,7 @@ public:
 
     switch (GetKind_TimeIntScheme()) {
       case RUNGE_KUTTA_EXPLICIT:
-        iRKLimit = GetnRKStep();
+        iRKLimit = nRKStep;
         break;
       case CLASSICAL_RK4_EXPLICIT:
         iRKLimit = 4;
