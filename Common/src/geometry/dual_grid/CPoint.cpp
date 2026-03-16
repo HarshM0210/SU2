@@ -74,7 +74,7 @@ void CPoint::FullAllocation(unsigned short imesh, const CConfig* config) {
 
   /*--- Multigrid structures. ---*/
   if (config->GetnMGLevels() > 0) {
-    Parent_CV.resize(npoint) = ULONG_MAX;  // Initialize to ULONG_MAX to indicate unagglomerated
+    Parent_CV.resize(npoint) = numeric_limits<unsigned long>::max();
     Agglomerate.resize(npoint) = false;
     Agglomerate_Indirect.resize(npoint) = false;
     /*--- The finest grid does not have children CV's. ---*/
