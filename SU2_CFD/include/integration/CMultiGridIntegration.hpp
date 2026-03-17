@@ -68,8 +68,7 @@ private:
   void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container,
                        CNumerics ******numerics_container, CConfig **config,
                        unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                       unsigned short iZone, unsigned short iInst,
-                       unsigned short *lastPreSmoothIters);
+                       unsigned short iZone, unsigned short iInst);
 
   /*!
    * \brief Compute the forcing term.
@@ -80,8 +79,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SetForcing_Term(CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine,
-                       CGeometry *geo_coarse, CConfig *config, unsigned short iMesh,
-                       su2double val_factor = -1.0);
+                       CGeometry *geo_coarse, CConfig *config, unsigned short iMesh);
 
   /*!
    * \brief Add the truncation error to the residual.
@@ -170,7 +168,6 @@ private:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iZone - Index of the zone.
    * \param[in] iRKLimit - Number of Runge-Kutta steps.
-   * \param[out] lastPreSmoothIters - Number of pre-smoothing iterations performed.
    */
   void PreSmoothing(unsigned short RunTime_EqSystem,
   CGeometry**** geometry,
@@ -183,8 +180,7 @@ private:
   CConfig *config,
   unsigned short iMesh,
   unsigned short iZone,
-  unsigned short iRKLimit,
-  unsigned short *lastPreSmoothIters);
+  unsigned short iRKLimit);
 
   /*!
    * \brief Compute the fine grid correction from the coarse solution.
@@ -207,7 +203,7 @@ private:
    * \param[in] config - Definition of the particular problem.
    */
   void SmoothProlongated_Correction(unsigned short RunTime_EqSystem, CSolver *solver, CGeometry *geometry,
-                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config, unsigned short iMesh);
+                                    unsigned short val_nSmooth, su2double val_smooth_coeff, CConfig *config);
 
   /*!
    * \brief Restrict solution from fine grid to a coarse grid.
