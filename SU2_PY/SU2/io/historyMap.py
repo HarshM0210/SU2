@@ -313,7 +313,7 @@ history_header_map = {
     "CUSTOM_OBJFUNC": {
         "DESCRIPTION": "Custom obj. function value.",
         "GROUP": "COMBO",
-        "HEADER": "ComboObj",
+        "HEADER": "CustomObj",
         "TYPE": "COEFFICIENT",
     },
     "DEFORM_ITER": {
