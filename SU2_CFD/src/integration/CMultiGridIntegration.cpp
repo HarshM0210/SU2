@@ -418,7 +418,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
 
     /*--- Synchronize before each smoothing iteration ---*/
-    SU2_OMP_BARRIER
+    //SU2_OMP_BARRIER
 
     /*--- Time and space integration ---*/
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
@@ -466,7 +466,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
 
     /*--- Synchronize before each post-smoothing iteration ---*/
-    SU2_OMP_BARRIER
+    //SU2_OMP_BARRIER
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
       if (iRKStep == 0) {
