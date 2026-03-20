@@ -166,13 +166,6 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
     /*--- Update coarse grid CFL ---*/
     CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
 
-#ifdef HAVE_MPI
-    /*--- Ensure all ranks use the same CFL value (broadcast from rank 0) ---*/
-    /*--- Use su2double buffer for MeDiPack compatibility. ---*/
-    su2double CFL_bcast = CFL_coarse_new;
-    SU2_MPI::Bcast(&CFL_bcast, 1, MPI_DOUBLE, 0, SU2_MPI::GetComm());
-    CFL_coarse_new = SU2_TYPE::GetValue(CFL_bcast);
-#endif
 
     config->SetCFL(iMesh+1, CFL_coarse_new);
   }
