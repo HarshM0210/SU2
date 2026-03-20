@@ -28,76 +28,11 @@
 #include "../../include/integration/CMultiGridIntegration.hpp"
 #include "../../../Common/include/parallelization/omp_structure.hpp"
 
-namespace {
-/*!
- * \brief Helper function to enforce Euler wall BC by projecting momentum to tangent plane.
- * \param[in] geo_coarse - Coarse grid geometry.
- * \param[in] config - Problem configuration.
- * \param[in,out] sol_coarse - Coarse grid solver (to access and modify solution/correction).
- * \param[in] use_solution_old - If true, project Solution_Old (corrections); if false, project Solution.
- */
-void ProjectEulerWallToTangentPlane(CGeometry* geo_coarse, const CConfig* config, CSolver* sol_coarse,
-                                    bool use_solution_old) {
-  const bool grid_movement = config->GetGrid_Movement();
-
-  for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != EULER_WALL) continue;
-
-    SU2_OMP_FOR_STAT(32)
-    for (auto iVertex = 0ul; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-      const auto Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-
-      if (!geo_coarse->nodes->GetDomain(Point_Coarse)) continue;
-
-      /*--- Get coarse grid normal ---*/
-      su2double Normal[3] = {0.0};
-      geo_coarse->vertex[iMarker][iVertex]->GetNormal(Normal);
-      const auto nDim = geo_coarse->GetnDim();
-      su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-      if (Area < EPS) continue;
-
-      /*--- Normalize normal vector ---*/
-      su2double UnitNormal[3] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        UnitNormal[iDim] = Normal[iDim] / Area;
-      }
-
-      /*--- Get current solution or correction ---*/
-      su2double* solution_coarse = use_solution_old ?
-        sol_coarse->GetNodes()->GetSolution_Old(Point_Coarse) :
-        sol_coarse->GetNodes()->GetSolution(Point_Coarse);
-
-      /*--- Compute normal component of momentum.
-       *    For grid movement (e.g. rotating frame) and when projecting the solution
-       *    (not corrections), compute the normal component of the RELATIVE momentum
-       *    (rho*v - rho*v_grid).n to enforce (v - v_grid).n = 0.
-       *    This matches the fine-grid Euler/symmetry BC (BC_Sym_Plane). ---*/
-      su2double momentum_n = 0.0;
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        momentum_n += solution_coarse[iDim + 1] * UnitNormal[iDim];
-      }
-      if (grid_movement && !use_solution_old) {
-        const su2double* GridVel = geo_coarse->nodes->GetGridVel(Point_Coarse);
-        su2double rho = solution_coarse[0];
-        for (auto iDim = 0u; iDim < nDim; iDim++) {
-          momentum_n -= rho * GridVel[iDim] * UnitNormal[iDim];
-        }
-      }
-
-      /*--- Project to tangent plane: solution_coarse -= (momentum_n) * n ---*/
-      for (auto iDim = 0u; iDim < nDim; iDim++) {
-        solution_coarse[iDim + 1] -= momentum_n * UnitNormal[iDim];
-      }
-    }
-    END_SU2_OMP_FOR
-  }
-}
-}  // anonymous namespace
-
 passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
                                                           unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current) {
   /*--- Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS). ---*/
+
+  const bool wasActive = AD::BeginPassive();
 
   passivedouble current_coeff = CFL_coarse_current / CFL_fine;
 
@@ -239,12 +174,10 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
     CFL_coarse_new = SU2_TYPE::GetValue(CFL_bcast);
 #endif
 
-    /*--- Update the shared config object (wrapped to prevent tape recording) ---*/
-    const bool wasActive = AD::BeginPassive();
     config->SetCFL(iMesh+1, CFL_coarse_new);
-    AD::EndPassive(wasActive);
   }
 
+  AD::EndPassive(wasActive);
   return CFL_coarse_new;
 }
 
@@ -543,24 +476,24 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
     /*--- Synchronize before each post-smoothing iteration ---*/
     SU2_OMP_BARRIER
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
-    solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
-    if (iRKStep == 0) {
-      /*--- Set the old solution ---*/
-      solver_fine->Set_OldSolution();
-      if (classical_rk4) solver_fine->Set_NewSolution();
-      solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
+      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+      if (iRKStep == 0) {
+        /*--- Set the old solution ---*/
+        solver_fine->Set_OldSolution();
+        if (classical_rk4) solver_fine->Set_NewSolution();
+        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
+      }
+
+      /*--- Space integration ---*/
+      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
+
+      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
+      /*--- Send-Receive boundary conditions, and postprocessing ---*/
+      solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
+
     }
-
-    /*--- Space integration ---*/
-    Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
-
-    /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-    Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-
-    /*--- Send-Receive boundary conditions, and postprocessing ---*/
-    solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
-
-  }
 
     /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
     solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
@@ -609,7 +542,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   delete [] Solution;
 
   /*--- Enforce Euler wall BC on corrections by projecting to tangent plane ---*/
-  ProjectEulerWallToTangentPlane(geo_coarse, config, sol_coarse, true);
+  sol_coarse->MultigridProjectEulerWall(geo_coarse, config, true);
 
   /*--- Remove any contributions from no-slip walls. ---*/
 
@@ -869,7 +802,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   }
 
   /*--- Enforce Euler wall BC by projecting velocity to tangent plane ---*/
-  ProjectEulerWallToTangentPlane(geo_coarse, config, sol_coarse, false);
+  sol_coarse->MultigridProjectEulerWall(geo_coarse, config, false);
 
   /*--- MPI the new interpolated solution ---*/
 
