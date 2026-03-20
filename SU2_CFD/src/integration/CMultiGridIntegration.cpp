@@ -355,9 +355,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       if (iMesh == config->GetnMGLevels()-2)
         nextRecurseParam = 0;
 
-      /*--- Synchronize prior to recursive calls ---*/
-      SU2_OMP_BARRIER
-
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
                       iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
 
@@ -442,6 +439,12 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
 
+    /*--- TODO/FIXME: This SOLUTION comms is likely redundant because Time_Integration
+     *   (Explicit_Iteration_impl / CompleteImplicitIteration_impl) already syncs SOLUTION halos.
+     *   Kept for testing; remove once verified. ---*/
+    solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+    solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+
   }
 }
 
@@ -483,6 +486,12 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
 
     }
+
+    /*--- TODO/FIXME: This SOLUTION comms is likely redundant because Time_Integration
+     *   (Explicit_Iteration_impl / CompleteImplicitIteration_impl) already syncs SOLUTION halos.
+     *   Kept for testing; remove once verified. ---*/
+    solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+    solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
 
   }
 }

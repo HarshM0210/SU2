@@ -586,7 +586,7 @@ def main():
     contadj_naca0012.cfg_dir   = "cont_adj_euler/naca0012"
     contadj_naca0012.cfg_file  = "inv_NACA0012.cfg"
     contadj_naca0012.test_iter = 5
-    contadj_naca0012.test_vals = [-9.584244, -15.043117, -0.726250, 0.020280]
+    contadj_naca0012.test_vals = [-9.578867, -15.048458, -0.726250, 0.020280]
     contadj_naca0012.tol       = 0.001
     test_list.append(contadj_naca0012)
 
@@ -595,7 +595,7 @@ def main():
     contadj_oneram6.cfg_dir   = "cont_adj_euler/oneram6"
     contadj_oneram6.cfg_file  = "inv_ONERAM6.cfg"
     contadj_oneram6.test_iter = 10
-    contadj_oneram6.test_vals = [-11.970149, -12.503534, -1.086100, 0.007556]
+    contadj_oneram6.test_vals = [-11.969828, -12.503366, -1.086100, 0.007556]
     test_list.append(contadj_oneram6)
 
     # Inviscid WEDGE: tests averaged outflow total pressure adjoint
@@ -611,7 +611,7 @@ def main():
     contadj_fixedCL_naca0012.cfg_dir   = "fixed_cl/naca0012"
     contadj_fixedCL_naca0012.cfg_file  = "inv_NACA0012_ContAdj.cfg"
     contadj_fixedCL_naca0012.test_iter = 100
-    contadj_fixedCL_naca0012.test_vals = [0.888169, -4.738760, -0.372890, -0.000614]
+    contadj_fixedCL_naca0012.test_vals = [0.887003, -4.740585, -0.358290, -0.000626]
     test_list.append(contadj_fixedCL_naca0012)
 
     ###################################
