@@ -442,10 +442,6 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
 
-    /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
-    solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-    solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-
   }
 }
 
@@ -488,9 +484,6 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
     }
 
-    /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
-    solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-    solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
   }
 }
 
