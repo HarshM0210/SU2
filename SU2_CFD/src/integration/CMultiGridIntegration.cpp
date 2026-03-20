@@ -283,6 +283,8 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
 
   const unsigned short Solver_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
 
+  /*--- Start an OpenMP parallel region covering the entire MG iteration, if the solver supports it. ---*/
+
   SU2_OMP_PARALLEL_(if(solver_container[iZone][iInst][MESH_0][Solver_Position]->GetHasHybridParallel()))
   {
 
@@ -473,17 +475,18 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
 }
 
 void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
-CGeometry**** geometry,
-CSolver***** solver_container,
-CConfig **config_container,
-CSolver* solver_fine,
-CNumerics** numerics_fine,
-CGeometry* geometry_fine,
-CSolver** solver_container_fine,
-CConfig *config,
-unsigned short iMesh,
-unsigned short iZone,
-unsigned short iRKLimit) {
+                                         CGeometry**** geometry,
+                                         CSolver***** solver_container,
+                                         CConfig **config_container,
+                                         CSolver* solver_fine,
+                                         CNumerics** numerics_fine,
+                                         CGeometry* geometry_fine,
+                                         CSolver** solver_container_fine,
+                                         CConfig *config,
+                                         unsigned short iMesh,
+                                         unsigned short iZone,
+                                         unsigned short iRKLimit) {
+
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
   const unsigned short nPreSmooth = config->GetMG_PreSmooth(iMesh);
   const unsigned long timeIter = config->GetTimeIter();
@@ -521,31 +524,43 @@ unsigned short iRKLimit) {
 }
 
 
-void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem, CSolver* solver_fine,CNumerics** numerics_fine, CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config, unsigned short iMesh,unsigned short iRKLimit)
-{
+void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
+                                          CSolver* solver_fine,
+                                          CNumerics** numerics_fine,
+                                          CGeometry* geometry_fine,
+                                          CSolver** solver_container_fine,
+                                          CConfig *config,
+                                          unsigned short iMesh,
+                                          unsigned short iRKLimit) {
+
   const bool classical_rk4 = (config->GetKind_TimeIntScheme() == CLASSICAL_RK4_EXPLICIT);
   const unsigned short nPostSmooth = config->GetMG_PostSmooth(iMesh);
   const unsigned long timeIter = config->GetTimeIter();
 
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
-      /*--- Synchronize before each post-smoothing iteration ---*/
-      SU2_OMP_BARRIER
-      for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
-      solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
-      if (iRKStep == 0) {
-        /*--- Set the old solution ---*/
-        solver_fine->Set_OldSolution();
-        if (classical_rk4) solver_fine->Set_NewSolution();
-        solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
-      }
-      /*--- Space integration ---*/
-      Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
-      /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-      Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
-      /*--- Send-Receive boundary conditions, and postprocessing ---*/
-      solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
+
+    /*--- Synchronize before each post-smoothing iteration ---*/
+    SU2_OMP_BARRIER
+    for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
+    solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+    if (iRKStep == 0) {
+      /*--- Set the old solution ---*/
+      solver_fine->Set_OldSolution();
+      if (classical_rk4) solver_fine->Set_NewSolution();
+      solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
     }
+
+    /*--- Space integration ---*/
+    Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
+
+    /*--- Time integration, update solution using the old solution plus the solution increment ---*/
+    Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
+    /*--- Send-Receive boundary conditions, and postprocessing ---*/
+    solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
+
+  }
 
     /*--- MPI sync after RK stage to ensure halos have updated solution for next smoothing iteration ---*/
     solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);

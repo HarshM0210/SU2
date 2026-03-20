@@ -145,14 +145,9 @@ private:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    * \param[in] iRKLimit - Number of Runge-Kutta steps.
    */
-  void PostSmoothing(unsigned short RunTime_EqSystem,
-  CSolver* solver_fine,
-  CNumerics** numerics_fine,
-  CGeometry* geometry_fine,
-  CSolver** solver_container_fine,
-  CConfig *config,
-  unsigned short iMesh,
-  unsigned short iRKLimit);
+  void PostSmoothing(unsigned short RunTime_EqSystem, CSolver* solver_fine, CNumerics** numerics_fine,
+                     CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config,
+                     unsigned short iMesh, unsigned short iRKLimit);
 
   /*!
    * \brief Apply pre-smoothing iterations on the fine grid before restriction.
@@ -169,18 +164,10 @@ private:
    * \param[in] iZone - Index of the zone.
    * \param[in] iRKLimit - Number of Runge-Kutta steps.
    */
-  void PreSmoothing(unsigned short RunTime_EqSystem,
-  CGeometry**** geometry,
-  CSolver***** solver_container,
-  CConfig **config_container,
-  CSolver* solver_fine,
-  CNumerics** numerics_fine,
-  CGeometry* geometry_fine,
-  CSolver** solver_container_fine,
-  CConfig *config,
-  unsigned short iMesh,
-  unsigned short iZone,
-  unsigned short iRKLimit);
+  void PreSmoothing(unsigned short RunTime_EqSystem, CGeometry**** geometry, CSolver***** solver_container,
+                    CConfig **config_container, CSolver* solver_fine, CNumerics** numerics_fine,
+                    CGeometry* geometry_fine, CSolver** solver_container_fine, CConfig *config,
+                    unsigned short iMesh, unsigned short iZone, unsigned short iRKLimit);
 
   /*!
    * \brief Compute the fine grid correction from the coarse solution.

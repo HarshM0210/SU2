@@ -28,7 +28,6 @@
 #pragma once
 
 #include "CGeometry.hpp"
-class CMultiGridQueue;
 
 /*!
  * \class CMultiGridGeometry
