@@ -58,7 +58,6 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
   /*--- Set default parameter values ---*/
 
   const auto incomplete = iparm[IPARM_INCOMPLETE];
-  const auto mtx_type = iparm[IPARM_MTX_TYPE];
   pastixInitParam(iparm, dparm);
 
   /*--- Customize important parameters ---*/
@@ -78,7 +77,6 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
   iparm[IPARM_INCOMPLETE] = incomplete;
   iparm[IPARM_LEVEL_OF_FILL] = static_cast<pastix_int_t>(config->GetPastixFillLvl());
   iparm[IPARM_THREAD_NBR] = omp_get_max_threads();
-  iparm[IPARM_MTX_TYPE] = mtx_type;
 
   pastixInit(&state, SU2_MPI::GetComm(), iparm, dparm);
 
@@ -182,7 +180,7 @@ void CPastixWrapper<ScalarType>::Initialize(CGeometry* geometry, const CConfig* 
   /*--- 4 - Perform ordering, symbolic factorization, and analysis steps ---*/
 
   spmInitDist(&spm, SU2_MPI::GetComm());
-  spm.mtxtype = static_cast<spm_mtxtype_t>(mtx_type);
+  spm.mtxtype = SpmGeneral;  // Despite being symmetric, we store the entire matrix.
   spm.flttype = SpmDouble;
   spm.fmttype = SpmCSC;
   spm.layout = SpmColMajor;
@@ -222,8 +220,6 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
     }
   }
   verb = config->GetPastixVerbLvl();
-  const bool sym = kind_fact == PASTIX_LDLT || kind_fact == PASTIX_LDLT_P;
-  iparm[IPARM_MTX_TYPE] = sym ? PastixSymmetric : PastixGeneral;
   iparm[IPARM_INCOMPLETE] = (kind_fact == PASTIX_ILU);
 
   Initialize(geometry, config);
@@ -240,12 +236,6 @@ void CPastixWrapper<ScalarType>::Factorize(CGeometry* geometry, const CConfig* c
     default:
       iparm[IPARM_VERBOSE] = PastixVerboseNot;
       break;
-  }
-
-  if (kind_fact == PASTIX_LDLT || kind_fact == PASTIX_LDLT_P) {
-    iparm[IPARM_TRANSPOSE_SOLVE] = PastixNoTrans;  // symmetric so no need for slower transp. solve
-  } else {
-    iparm[IPARM_TRANSPOSE_SOLVE] = PastixTrans;  // inverted logic due to CSR to CSC copy
   }
 
   /*--- Is factorizing needed on this iteration? ---*/

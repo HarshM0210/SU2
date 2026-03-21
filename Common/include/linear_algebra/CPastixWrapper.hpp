@@ -79,6 +79,7 @@ class CPastixWrapper {
   bool issetup{};        /*!< \brief Signals that the matrix data has been provided. */
   bool isinitialized{};  /*!< \brief Signals that the sparsity pattern has been set. */
   bool isfactorized{};   /*!< \brief Signals that a factorization has been computed. */
+  bool transpose{};      /*!< \brief Solve A^T x = b instead of A x = b. */
   unsigned long iter{};  /*!< \brief Number of times a factorization has been requested. */
   unsigned short verb{}; /*!< \brief Verbosity level. */
   const int mpi_size = SU2_MPI::GetSize();
@@ -156,12 +157,7 @@ class CPastixWrapper {
    * \brief Request solves with the transposed matrix.
    * \param[in] transposed - Yes or no.
    */
-  void SetTransposedSolve(bool transposed = true) {
-    if (iparm[IPARM_MTX_TYPE] == PastixGeneral) {
-      /*--- Inverted logic due to CSR to CSC copy. ---*/
-      iparm[IPARM_TRANSPOSE_SOLVE] = transposed ? PastixNoTrans : PastixTrans;
-    }
-  }
+  void SetTransposedSolve(bool transposed = true) { transpose = transposed; }
 
   /*!
    * \brief Runs the "solve" task for any rhs/sol with operator []
@@ -172,8 +168,15 @@ class CPastixWrapper {
   void Solve(const T& rhs, T& sol) {
     if (!isfactorized) SU2_MPI::Error("The factorization has not been computed yet.", CURRENT_FUNCTION);
 
-    for (auto i = 0ul; i < matrix.size_rhs(); ++i) workvec[i] = rhs[i];
+    /*--- Inverted logic due to CSR to CSC direct copy (PaStiX's A is our A^T). ---*/
+    if (iparm[IPARM_FACTORIZATION] == PastixFactLDLT || transpose) {
+      iparm[IPARM_TRANSPOSE_SOLVE] = PastixNoTrans;
+    } else {
+      iparm[IPARM_TRANSPOSE_SOLVE] = PastixTrans;
+    }
     iparm[IPARM_VERBOSE] = PastixVerboseNot;
+
+    for (auto i = 0ul; i < matrix.size_rhs(); ++i) workvec[i] = rhs[i];
     if (pastix_task_solve(state, matrix.size_rhs(), 1, workvec.data(), matrix.size_rhs()) != PASTIX_SUCCESS) {
       SU2_MPI::Error("Error solving linear system.", CURRENT_FUNCTION);
     }
