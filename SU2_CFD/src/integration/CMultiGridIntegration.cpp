@@ -30,8 +30,8 @@
 
 passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolver* solver_coarse, CGeometry* geometry_coarse,
                                                           unsigned short iMesh, passivedouble CFL_fine, passivedouble CFL_coarse_current) {
-  /*--- Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS). ---*/
 
+  /*--- Must be called from a single-thread context (e.g. inside BEGIN_SU2_OMP_SAFE_GLOBAL_ACCESS). ---*/
   const bool wasActive = AD::BeginPassive();
 
   passivedouble current_coeff = CFL_coarse_current / CFL_fine;
@@ -68,19 +68,15 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
     unsigned long iter = current_iter;
 
     /*--- Get sum of all RMS residuals for all variables (local to this rank) ---*/
-    /*--- Use su2double for MPI buffers (MeDiPack requires sizeof(su2double) per element ---*/
-    /*--- when MPI_DOUBLE is used, since convertDatatype maps it to AMPI_ADOUBLE). ---*/
     su2double rms_res_coarse_local = 0.0;
     for (unsigned short iVar = 0; iVar < solver_coarse->GetnVar(); iVar++) {
       rms_res_coarse_local += SU2_TYPE::GetValue(solver_coarse->GetRes_RMS(iVar));
     }
 
     /*--- MPI synchronization: ensure all ranks use the same global residual value ---*/
-    /*--- This is critical for consistent CFL adaptation across all ranks ---*/
     passivedouble rms_res_coarse = SU2_TYPE::GetValue(rms_res_coarse_local);
 
     /*--- For coarse grids, residuals are not globally reduced by default ---*/
-    /*--- We need to synchronize them for consistent adaptive CFL decisions ---*/
     if (geometry_coarse->GetMGLevel() > 0) {
       su2double rms_global_sum = 0.0;
       SU2_MPI::Allreduce(&rms_res_coarse_local, &rms_global_sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
@@ -359,7 +355,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
                       iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
 
       /*--- Synchronize after each multigrid cycle ---*/
-      SU2_OMP_BARRIER
+      //SU2_OMP_BARRIER
     }
 
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
