@@ -434,8 +434,8 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
     /*--- TODO/FIXME: This SOLUTION comms is likely redundant because Time_Integration
      *   (Explicit_Iteration_impl / CompleteImplicitIteration_impl) already syncs SOLUTION halos.
      *   Kept for testing; remove once verified. ---*/
-    //solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-    //solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+
+
 
   }
 }
