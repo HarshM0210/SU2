@@ -163,13 +163,13 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
     CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
 
     // nijso: TODO FIXME
-    #ifdef HAVE_MPI
-      /*--- Ensure all ranks use the same CFL value (broadcast from rank 0) ---*/
-      /*--- Use su2double buffer for MeDiPack compatibility. ---*/
-      su2double CFL_bcast = CFL_coarse_new;
-      SU2_MPI::Bcast(&CFL_bcast, 1, MPI_DOUBLE, 0, SU2_MPI::GetComm());
-      CFL_coarse_new = SU2_TYPE::GetValue(CFL_bcast);
-    #endif
+#ifdef HAVE_MPI
+    /*--- Ensure all ranks use the same CFL value (broadcast from rank 0) ---*/
+    /*--- Use su2double buffer for MeDiPack compatibility. ---*/
+    su2double CFL_bcast = CFL_coarse_new;
+    SU2_MPI::Bcast(&CFL_bcast, 1, MPI_DOUBLE, 0, SU2_MPI::GetComm());
+    CFL_coarse_new = SU2_TYPE::GetValue(CFL_bcast);
+#endif
 
     config->SetCFL(iMesh+1, CFL_coarse_new);
   }
@@ -423,7 +423,7 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
 
     /*--- Synchronize before each smoothing iteration ---*/
     // nijso TODO FIXME
-    SU2_OMP_BARRIER
+    //SU2_OMP_BARRIER
 
     /*--- Time and space integration ---*/
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
@@ -447,8 +447,8 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
     /*--- TODO/FIXME: This SOLUTION comms is likely redundant because Time_Integration
      *   (Explicit_Iteration_impl / CompleteImplicitIteration_impl) already syncs SOLUTION halos.
      *   Kept for testing; remove once verified. ---*/
-    solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-    solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+    //solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+    //solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
 
   }
 }
@@ -472,7 +472,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
 
     /*--- Synchronize before each post-smoothing iteration ---*/
     // nijso TODO FIXME
-    SU2_OMP_BARRIER
+    //SU2_OMP_BARRIER
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
       if (iRKStep == 0) {
@@ -496,7 +496,7 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
     /*--- TODO/FIXME: This SOLUTION comms is likely redundant because Time_Integration
      *   (Explicit_Iteration_impl / CompleteImplicitIteration_impl) already syncs SOLUTION halos.
      *   Kept for testing; remove once verified. ---*/
-    solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
+    //solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
     solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
 
   }
