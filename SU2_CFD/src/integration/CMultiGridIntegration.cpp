@@ -408,35 +408,31 @@ void CMultiGridIntegration::PreSmoothing(unsigned short RunTime_EqSystem,
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
   for (unsigned short iPreSmooth = 0; iPreSmooth < nPreSmooth; iPreSmooth++) {
 
-    /*--- Synchronize before each smoothing iteration ---*/
-    // nijso TODO FIXME
-    //SU2_OMP_BARRIER
-
     /*--- Time and space integration ---*/
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
+
       /*--- Send-Receive boundary conditions, and preprocessing ---*/
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
+
       if (iRKStep == 0) {
+
         /*--- Set the old solution ---*/
         solver_fine->Set_OldSolution();
+
         if (classical_rk4) solver_fine->Set_NewSolution();
         solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh, timeIter);
         Adjoint_Setup(geometry, solver_container, config_container, RunTime_EqSystem, timeIter, iZone);
       }
+
       /*--- Space integration ---*/
       Space_Integration(geometry_fine, solver_container_fine, numerics_fine, config, iMesh, iRKStep, RunTime_EqSystem);
+
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
       Time_Integration(geometry_fine, solver_container_fine, config, iRKStep, RunTime_EqSystem);
+
       /*--- Send-Receive boundary conditions, and postprocessing ---*/
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
     }
-
-    /*--- TODO/FIXME: This SOLUTION comms is likely redundant because Time_Integration
-     *   (Explicit_Iteration_impl / CompleteImplicitIteration_impl) already syncs SOLUTION halos.
-     *   Kept for testing; remove once verified. ---*/
-
-
-
   }
 }
 
@@ -457,14 +453,13 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
   /*--- Do a postsmoothing on the grid iMesh after prolongation from the grid iMesh+1 ---*/
   for (unsigned short iPostSmooth = 0; iPostSmooth < nPostSmooth; iPostSmooth++) {
 
-    /*--- Synchronize before each post-smoothing iteration ---*/
-    // nijso TODO FIXME
-    //SU2_OMP_BARRIER
     for (unsigned short iRKStep = 0; iRKStep < iRKLimit; iRKStep++) {
       solver_fine->Preprocessing(geometry_fine, solver_container_fine, config, iMesh, iRKStep, RunTime_EqSystem, false);
       if (iRKStep == 0) {
+
         /*--- Set the old solution ---*/
         solver_fine->Set_OldSolution();
+
         if (classical_rk4) solver_fine->Set_NewSolution();
         solver_fine->SetTime_Step(geometry_fine, solver_container_fine, config, iMesh,  timeIter);
       }
@@ -479,13 +474,6 @@ void CMultiGridIntegration::PostSmoothing(unsigned short RunTime_EqSystem,
       solver_fine->Postprocessing(geometry_fine, solver_container_fine, config, iMesh);
 
     }
-
-    /*--- TODO/FIXME: This SOLUTION comms is likely redundant because Time_Integration
-     *   (Explicit_Iteration_impl / CompleteImplicitIteration_impl) already syncs SOLUTION halos.
-     *   Kept for testing; remove once verified. ---*/
-    //solver_fine->InitiateComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-    solver_fine->CompleteComms(geometry_fine, config, MPI_QUANTITIES::SOLUTION);
-
   }
 }
 
