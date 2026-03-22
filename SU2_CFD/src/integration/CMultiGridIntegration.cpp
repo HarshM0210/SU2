@@ -73,15 +73,11 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
       rms_res_coarse_local += SU2_TYPE::GetValue(solver_coarse->GetRes_RMS(iVar));
     }
 
-    /*--- MPI synchronization: ensure all ranks use the same global residual value ---*/
-    passivedouble rms_res_coarse = SU2_TYPE::GetValue(rms_res_coarse_local);
-
-    /*--- For coarse grids, residuals are not globally reduced by default ---*/
-    if (geometry_coarse->GetMGLevel() > 0) {
-      su2double rms_global_sum = 0.0;
-      SU2_MPI::Allreduce(&rms_res_coarse_local, &rms_global_sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
-      rms_res_coarse = SU2_TYPE::GetValue(rms_global_sum) / static_cast<passivedouble>(SU2_MPI::GetSize());
-    }
+    /*--- MPI synchronization: ensure all ranks use the same global residual value. ---*/
+    /*--- Always reduce across ranks so all subsequent CFL logic is deterministic. ---*/
+    su2double rms_global_sum = 0.0;
+    SU2_MPI::Allreduce(&rms_res_coarse_local, &rms_global_sum, 1, MPI_DOUBLE, MPI_SUM, SU2_MPI::GetComm());
+    passivedouble rms_res_coarse = SU2_TYPE::GetValue(rms_global_sum) / static_cast<passivedouble>(SU2_MPI::GetSize());
 
     /*--- Flip-flop detection: detect oscillating residuals (once per outer iteration) ---*/
     bool oscillation_detected = false;
@@ -161,15 +157,6 @@ passivedouble CMultiGridIntegration::computeMultigridCFL(CConfig* config, CSolve
 
     /*--- Update coarse grid CFL ---*/
     CFL_coarse_new = max(0.5 * CFL_fine, min(CFL_fine, CFL_fine * new_coeff));
-
-    // nijso: TODO FIXME
-#ifdef HAVE_MPI
-    /*--- Ensure all ranks use the same CFL value (broadcast from rank 0) ---*/
-    /*--- Use su2double buffer for MeDiPack compatibility. ---*/
-    su2double CFL_bcast = CFL_coarse_new;
-    SU2_MPI::Bcast(&CFL_bcast, 1, MPI_DOUBLE, 0, SU2_MPI::GetComm());
-    CFL_coarse_new = SU2_TYPE::GetValue(CFL_bcast);
-#endif
 
     config->SetCFL(iMesh+1, CFL_coarse_new);
   }
