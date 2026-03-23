@@ -518,7 +518,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
   delete [] Solution;
 
   /*--- Enforce Euler wall BC on corrections by projecting to tangent plane ---*/
-  sol_coarse->MultigridProjectEulerWall(geo_coarse, config, true);
+  //sol_coarse->MultigridProjectEulerWall(geo_coarse, config, true);
 
   /*--- Remove any contributions from no-slip walls. ---*/
 
@@ -778,7 +778,7 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   }
 
   /*--- Enforce Euler wall BC by projecting velocity to tangent plane ---*/
-  sol_coarse->MultigridProjectEulerWall(geo_coarse, config, false);
+  //sol_coarse->MultigridProjectEulerWall(geo_coarse, config, false);
 
   /*--- MPI the new interpolated solution ---*/
 
