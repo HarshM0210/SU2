@@ -3009,6 +3009,7 @@ template <class V, ENUM_REGIME FlowRegime>
 void CFVMFlowSolverBase<V, FlowRegime>::MultigridProjectEulerWall(CGeometry* geometry, const CConfig* config,
                                                                    bool use_solution_old) {
   const auto iVel = prim_idx.Velocity();
+  const auto nDim = geometry->GetnDim();
   const bool grid_movement = config->GetGrid_Movement();
 
   for (auto iMarker = 0u; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -3020,15 +3021,23 @@ void CFVMFlowSolverBase<V, FlowRegime>::MultigridProjectEulerWall(CGeometry* geo
 
       if (!geometry->nodes->GetDomain(iPoint)) continue;
 
-      su2double Normal[MAXNDIM] = {0.0};
+      /*--- For nodes shared by multiple Euler-wall (or symmetry) markers,
+       *    geometry->symmetryNormals stores a Gram-Schmidt corrected normal,
+       *    exactly as used by BC_Sym_Plane at runtime.  For nodes on a single
+       *    wall the map is empty and we fall back to the raw marker normal.
+       *    The Gram-Schmidt orthogonalization guarantees that projecting
+       *    sequentially through all markers (n̂₁ then n̂₂' = n̂₂ - (n̂₂·n̂₁)n̂₁)
+       *    is correct and does not corrupt the earlier constraint. ---*/
+      su2double Normal[MAXNDIM] = {0.0}, UnitNormal[MAXNDIM] = {0.0};
       geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
-      const auto nDim = geometry->GetnDim();
-      const su2double Area = GeometryToolbox::Norm(nDim, Normal);
-
-      if (Area < EPS) continue;
-
-      su2double UnitNormal[MAXNDIM] = {0.0};
-      for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+      const auto it = geometry->symmetryNormals[iMarker].find(iVertex);
+      if (it != geometry->symmetryNormals[iMarker].end()) {
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = it->second[iDim];
+      } else {
+        const su2double Area = GeometryToolbox::Norm(nDim, Normal);
+        if (Area < EPS) continue;
+        for (auto iDim = 0u; iDim < nDim; iDim++) UnitNormal[iDim] = Normal[iDim] / Area;
+      }
 
       su2double* sol = use_solution_old ? nodes->GetSolution_Old(iPoint) : nodes->GetSolution(iPoint);
 
