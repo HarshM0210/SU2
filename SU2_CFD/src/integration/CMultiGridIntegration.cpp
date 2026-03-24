@@ -349,8 +349,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
       MultiGrid_Cycle(geometry, solver_container, numerics_container, config_container,
                       iMesh+1, nextRecurseParam, RunTime_EqSystem, iZone, iInst);
 
-      /*--- Synchronize after each multigrid cycle ---*/
-      //SU2_OMP_BARRIER
     }
 
     /*--- Compute prolongated solution, and smooth the correction $u^(new)_k = u_k +  Smooth(I^k_(k+1)(u_(k+1)-I^(k+1)_k u_k))$ ---*/
