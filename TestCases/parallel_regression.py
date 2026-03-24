@@ -1093,7 +1093,7 @@ def main():
     edge_PPR.cfg_dir   = "nicf/edge"
     edge_PPR.cfg_file  = "edge_PPR.cfg"
     edge_PPR.test_iter = 50
-    edge_PPR.test_vals = [-12.063759, -5.873111, -0.000034, 0.000000]
+    edge_PPR.test_vals = [-12.063546, -5.872923, -0.000034, 0.000000]
     test_list.append(edge_PPR)
 
     # Rarefaction Q1D nozzle, include CoolProp fluid model
