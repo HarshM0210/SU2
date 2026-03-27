@@ -145,20 +145,21 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
           /*--- Euler walls: check curvature-based agglomeration criterion ---*/
           if (config->GetMarker_All_KindBC(marker_seed[0]) == EULER_WALL) {
             /*--- Allow agglomeration if marker is straight OR local curvature is small ---*/
-            if (!boundIsStraight[marker_seed[0]]) {
-              /*--- Compute local curvature at this point ---*/
-              su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, marker_seed[0]);
-              // limit to 45 degrees
-              if (local_curvature >= 45.0) {
-                agglomerate_seed = false;  // High curvature: do not agglomerate
-                euler_wall_rejected_curvature[marker_seed[0]]++;
-              } else {
-                euler_wall_agglomerated[marker_seed[0]]++;
-              }
-            } else {
-              /*--- Straight wall: agglomerate ---*/
-              euler_wall_agglomerated[marker_seed[0]]++;
-            }
+            //if (!boundIsStraight[marker_seed[0]]) {
+            //  /*--- Compute local curvature at this point ---*/
+            //  su2double local_curvature = ComputeLocalCurvature(fine_grid, iPoint, marker_seed[0]);
+            //  // limit to 45 degrees
+            //  if (local_curvature >= 45.0) {
+            //    agglomerate_seed = false;  // High curvature: do not agglomerate
+            //    euler_wall_rejected_curvature[marker_seed[0]]++;
+            //  } else {
+            //    euler_wall_agglomerated[marker_seed[0]]++;
+            //  }
+            //} else {
+            //  /*--- Straight wall: agglomerate ---*/
+            //  euler_wall_agglomerated[marker_seed[0]]++;
+            //}
+            agglomerate_seed = false;
           }
 
           /*--- Note that if the (single) marker is a SEND_RECEIVE, then the node is actually an interior point.
