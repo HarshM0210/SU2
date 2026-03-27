@@ -576,14 +576,12 @@ void CMultiGridIntegration::SmoothProlongated_Correction(unsigned short RunTime_
   for (auto iSmooth = 0u; iSmooth < val_nSmooth; iSmooth++) {
 
     /*--- Loop over all mesh points (sum the residuals of direct neighbors). ---*/
-    /*--- Use static scheduling to ensure deterministic iteration order for reproducibility ---*/
 
     SU2_OMP_FOR_STAT(roundUpDiv(geometry->GetnPoint(), omp_get_num_threads()))
     for (auto iPoint = 0ul; iPoint < geometry->GetnPoint(); ++iPoint) {
 
       solver->GetNodes()->SetResidualSumZero(iPoint);
 
-      /*--- Sum neighbor contributions in deterministic order ---*/
       for (auto iNeigh = 0u; iNeigh < geometry->nodes->GetnPoint(iPoint); ++iNeigh) {
         auto jPoint = geometry->nodes->GetPoint(iPoint, iNeigh);
         Residual_j = solver->LinSysRes.GetBlock(jPoint);

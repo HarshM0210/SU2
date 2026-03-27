@@ -160,6 +160,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
               euler_wall_agglomerated[marker_seed[0]]++;
             }
           }
+
           /*--- Note that if the (single) marker is a SEND_RECEIVE, then the node is actually an interior point.
                 In that case it can only be agglomerated with another interior point. ---*/
           if (config->GetMarker_All_KindBC(marker_seed[0]) == SEND_RECEIVE) {
@@ -611,26 +612,17 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
       /*--- Only increment by the number of parents that will actually be used ---*/
       Index_CoarseCV += nUsedParents;
 
-      /*--- Debug counters ---*/
-      unsigned long nSkipped = 0, nSuccess = 0;
-
       /*--- Create the final structure ---*/
       for (auto iVertex = 0ul; iVertex < nVertexR; iVertex++) {
         const auto iPoint_Fine = Children_Local[iVertex];
 
         /*--- Skip if this halo point was already agglomerated (first-wins policy) ---*/
         auto existing_parent = fine_grid->nodes->GetParent_CV(iPoint_Fine);
-        if (existing_parent != std::numeric_limits<unsigned long>::max()) {
-          nSkipped++;
-          continue;  // First-wins: keep existing assignment
-        }
+        if (existing_parent != std::numeric_limits<unsigned long>::max()) continue;
 
         /*--- Skip if parent mapping is invalid (sender didn't agglomerate) ---*/
         const auto iPoint_Coarse = Parent_Local[iVertex];
-        if (iPoint_Coarse == std::numeric_limits<unsigned long>::max()) {
-          nSkipped++;
-          continue;
-        }
+        if (iPoint_Coarse == std::numeric_limits<unsigned long>::max()) continue;
 
         /*--- Append to existing children, don't overwrite ---*/
         auto existing_children_count = nodes->GetnChildren_CV(iPoint_Coarse);
@@ -639,7 +631,6 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry* fine_grid, CConfig* config, un
         nodes->SetChildren_CV(iPoint_Coarse, existing_children_count, iPoint_Fine);
         nodes->SetnChildren_CV(iPoint_Coarse, existing_children_count + 1);
         nodes->SetDomain(iPoint_Coarse, false);
-        nSuccess++;
       }
     }
   }
