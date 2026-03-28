@@ -39,6 +39,7 @@
 #pragma once
 
 #include <cstddef>
+#include <algorithm>
 
 #include "../code_config.hpp"
 
@@ -274,3 +275,53 @@ inline void atomicAdd(T rhs, T& lhs) {
   SU2_OMP_ATOMIC
   lhs += rhs;
 }
+
+/*--- GCC supported atomic compare (for min/max) before the official date. ---*/
+#ifdef __GNUC__
+#define ATOMIC_COMPARE_SINCE 201511
+#else
+#define ATOMIC_COMPARE_SINCE 202011
+#endif
+
+/*--- By default the min/max fallback to critical is required for all types. ---*/
+#define ATOMIC_COMPARE_FALLBACK
+
+/*--- Atomic max, shared = max(shared, local). ---*/
+#ifdef _OPENMP
+#if _OPENMP >= ATOMIC_COMPARE_SINCE
+/*--- Atomic min/max are supported for arithmetic types. ---*/
+template <class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
+inline void atomicMax(const T& local, T& shared) {
+#pragma omp atomic compare
+  shared = shared < local ? local : shared;
+}
+
+/*--- Redefine the fallback for non arithmetic types. ---*/
+#undef ATOMIC_COMPARE_FALLBACK
+#define ATOMIC_COMPARE_FALLBACK , su2enable_if<!std::is_arithmetic<T>::value> = 0
+#endif
+#endif
+template <class T ATOMIC_COMPARE_FALLBACK>
+inline void atomicMax(const T& local, T& shared) {
+  SU2_OMP_CRITICAL
+  shared = std::max(local, shared);
+  END_SU2_OMP_CRITICAL
+}
+
+/*--- Atomic min, shared = min(shared, local). ---*/
+#ifdef _OPENMP
+#if _OPENMP >= ATOMIC_COMPARE_SINCE
+template <class T, su2enable_if<std::is_arithmetic<T>::value> = 0>
+inline void atomicMin(const T& local, T& shared) {
+#pragma omp atomic compare
+  shared = shared > local ? local : shared;
+}
+#endif
+#endif
+template <class T ATOMIC_COMPARE_FALLBACK>
+inline void atomicMin(const T& local, T& shared) {
+  SU2_OMP_CRITICAL
+  shared = std::min(local, shared);
+  END_SU2_OMP_CRITICAL
+}
+#undef ATOMIC_COMPARE_FALLBACK
