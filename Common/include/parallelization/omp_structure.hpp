@@ -276,11 +276,13 @@ inline void atomicAdd(T rhs, T& lhs) {
   lhs += rhs;
 }
 
-/*--- GCC supported atomic compare (for min/max) before the official date. ---*/
-#ifdef __GNUC__
-#define ATOMIC_COMPARE_SINCE 201511
-#else
+/*--- GCC supported atomic compare (for min/max) before it was fully 5.1 compliant. ---*/
 #define ATOMIC_COMPARE_SINCE 202011
+#ifdef __GNUC__
+#if __GNUC__ > 11
+#undef ATOMIC_COMPARE_SINCE
+#define ATOMIC_COMPARE_SINCE 201511
+#endif
 #endif
 
 /*--- By default the min/max fallback to critical is required for all types. ---*/
