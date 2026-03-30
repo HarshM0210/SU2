@@ -17,7 +17,8 @@ if build_machine.system() != 'windows' and meson.get_compiler('cpp').get_id() !=
                       '-Wno-uninitialized',
                       '-Wno-placement-new',
                       '-Wno-pedantic',
-                      '-Wno-error=deprecated-copy']
+                      '-Wno-error=deprecated-copy',
+                      '-Wno-free-nonheap-object']
   foreach flag : desired_warnings
     if meson.get_compiler('cpp').has_argument(flag)
       tecio_cpp_flags += flag
