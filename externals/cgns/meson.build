@@ -12,7 +12,7 @@ if build_machine.system() != 'windows' and meson.get_compiler('c').get_id() != '
                       '-Wno-stringop-truncation',
                       '-Wno-error=absolute-value',
                       '-Wno-error=class-memaccess',
-                      '-Wno-dangling-pointer]
+                      '-Wno-dangling-pointer']
   foreach flag : desired_warnings
     if meson.get_compiler('c').has_argument(flag)
       cgns_default_warnings += flag
