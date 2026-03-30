@@ -623,7 +623,7 @@ struct SelectMPIWrapper {
 #if defined CODI_REVERSE_TYPE
 template <>
 struct SelectMPIWrapper<passivedouble> {
-#if HAVE_MPI
+#if defined HAVE_MPI
   using W = CBaseMPIWrapper;
 #else
   using W = CBaseMPIWrapper<passivedouble>;
@@ -635,7 +635,7 @@ struct SelectMPIWrapper<passivedouble> {
 #if defined USE_MIXED_PRECISION
 template <>
 struct SelectMPIWrapper<su2mixedfloat> {
-#if HAVE_MPI
+#if defined HAVE_MPI
   using W = CBaseMPIWrapper;
 #else
   using W = CBaseMPIWrapper<su2mixedfloat>;
