@@ -28,17 +28,18 @@
 #include "mpi_structure.hpp"
 #include <cstring>  // memcpy
 
-/* Initialise the MPI Communicator Rank and Size */
+/* Initialise the MPI Communicator Rank, Size, and default MPI Communicator */
+#ifdef HAVE_MPI
+int CBaseMPIWrapper::Rank = 0;
+int CBaseMPIWrapper::Size = 1;
+CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = MPI_COMM_WORLD;
+#else
 template <typename ScalarType>
 int CBaseMPIWrapper<ScalarType>::Rank = 0;
 
 template <typename ScalarType>
 int CBaseMPIWrapper<ScalarType>::Size = 1;
 
-/* Set the default MPI Communicator */
-#ifdef HAVE_MPI
-CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = MPI_COMM_WORLD;
-#else
 template <typename ScalarType>
 typename CBaseMPIWrapper<ScalarType>::Comm CBaseMPIWrapper<ScalarType>::currentComm = 0;  // dummy value
 #endif
