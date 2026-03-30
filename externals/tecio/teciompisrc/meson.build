@@ -24,7 +24,8 @@ if build_machine.system() != 'windows' and meson.get_compiler('cpp').get_id() !=
                       '-Wno-error=cast-function-type',
                       '-Wno-cast-function-type',
                       '-Wno-free-nonheap-object',
-                      '-Wno-deprecated-copy']
+                      '-Wno-deprecated-copy',
+                      '-Wno-array-bounds']
   foreach flag : desired_warnings
     if meson.get_compiler('cpp').has_argument(flag)
       tec_cxx_flags += flag
