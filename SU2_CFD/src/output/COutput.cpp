@@ -2088,8 +2088,6 @@ void COutput::SetCommonHistoryFields() {
   AddHistoryOutput("OUTER_ITER", "Outer_Iter", ScreenOutputFormat::INTEGER, "ITER", "Outer iteration index");
   /// DESCRIPTION: The inner iteration index.
   AddHistoryOutput("INNER_ITER", "Inner_Iter", ScreenOutputFormat::INTEGER,  "ITER", "Inner iteration index");
-  /// DESCRIPTION: The current iteration calculation time.
-  AddHistoryOutput("ITER_TIME", "Time(s)", ScreenOutputFormat::FIXED, "ITER", "Time per iteration (s)");
   /// END_GROUP
 
   /// BEGIN_GROUP: TIME_DOMAIN, DESCRIPTION: Time integration information
@@ -2098,8 +2096,12 @@ void COutput::SetCommonHistoryFields() {
   /// Description: The current time step
   AddHistoryOutput("TIME_STEP", "Time_Step", ScreenOutputFormat::SCIENTIFIC, "TIME_DOMAIN", "Current time step (s)");
 
+  /// BEGIN_GROUP: WALL_TIME, DESCRIPTION: Wall-clock timing information.
+  /// DESCRIPTION: The current iteration wall-clock time.
+  AddHistoryOutput("ITER_TIME", "Time(sec)", ScreenOutputFormat::FIXED, "WALL_TIME", "Time per iteration (s)");
   /// DESCRIPTION: Currently used wall-clock time.
   AddHistoryOutput("WALL_TIME", "Time(sec)", ScreenOutputFormat::SCIENTIFIC, "WALL_TIME", "Average wall-clock time since the start of inner iterations.");
+  /// END_GROUP
 
   AddHistoryOutput("NONPHYSICAL_POINTS", "Nonphysical_Points", ScreenOutputFormat::INTEGER, "NONPHYSICAL_POINTS", "The number of non-physical points in the solution");
 
