@@ -71,6 +71,7 @@ COutput::COutput(const CConfig *config, unsigned short ndim, bool fem_output):
 
   cauchyTimeConverged = false;
   maxTimeDelayActive = false;
+  PrevStopTime = 0.0;
 
   convergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
   multiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
@@ -2087,6 +2088,8 @@ void COutput::SetCommonHistoryFields() {
   AddHistoryOutput("OUTER_ITER", "Outer_Iter", ScreenOutputFormat::INTEGER, "ITER", "Outer iteration index");
   /// DESCRIPTION: The inner iteration index.
   AddHistoryOutput("INNER_ITER", "Inner_Iter", ScreenOutputFormat::INTEGER,  "ITER", "Inner iteration index");
+  /// DESCRIPTION: The current iteration calculation time.
+  AddHistoryOutput("ITER_TIME", "Time(s)", ScreenOutputFormat::FIXED, "ITER", "Time per iteration (s)");
   /// END_GROUP
 
   /// BEGIN_GROUP: TIME_DOMAIN, DESCRIPTION: Time integration information
@@ -2288,13 +2291,21 @@ void COutput::LoadCommonHistoryData(const CConfig *config) {
   SetHistoryOutputValue("INNER_ITER", curInnerIter);
   SetHistoryOutputValue("OUTER_ITER", curOuterIter);
 
-  su2double StopTime, UsedTime;
+  su2double StopTime, UsedTime, IterTime;
 
   StopTime = SU2_MPI::Wtime();
 
   UsedTime = (StopTime - config->Get_StartTime())/(curInnerIter+1);
 
+  if (curInnerIter == 0) {
+    IterTime = StopTime - config->Get_StartTime(); // First iteration measured from start
+  } else {
+    IterTime = StopTime - PrevStopTime;
+  }
+  PrevStopTime = StopTime;
+
   SetHistoryOutputValue("WALL_TIME", UsedTime);
+  SetHistoryOutputValue("ITER_TIME", IterTime);
 
   SetHistoryOutputValue("NONPHYSICAL_POINTS", config->GetNonphysical_Points());
 }
