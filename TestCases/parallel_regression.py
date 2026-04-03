@@ -42,7 +42,19 @@ def main():
        This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
 
-    subprocess.run(['df', '-h', '/dev/shm'])
+    result = subprocess.run(
+        ['df', '-h', '/dev/shm'],
+        capture_output=True,
+        text=True
+    )
+
+    print("STDOUT:")
+    print(result.stdout)
+
+    print("STDERR:")
+    print(result.stderr)
+
+    print("Return code:", result.returncode)
 
     test_list = []
 
