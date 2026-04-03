@@ -30,15 +30,19 @@ from __future__ import print_function
 
 import os
 os.environ["OMPI_MCA_osc"] = "pt2pt"
-os.environ["OMPI_MCA_btl"] = "self,tcp"
+os.environ["OMPI_MCA_btl"] = "self,vader,tcp"
 
 import sys
 from TestCase import TestCase
+
+import subprocess
 
 def main():
     '''This program runs SU2 and ensures that the output matches specified values.
        This will be used to do checks when code is pushed to github
        to make sure nothing is broken. '''
+
+    subprocess.run(['df', '-h', '/dev/shm'])
 
     test_list = []
 
