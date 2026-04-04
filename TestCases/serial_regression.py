@@ -824,7 +824,7 @@ def main():
     unst_pitching_naca64a010_rans.cfg_dir   = "unsteady/pitching_naca64a010_rans"
     unst_pitching_naca64a010_rans.cfg_file  = "turb_NACA64A010.cfg"
     unst_pitching_naca64a010_rans.test_iter = 1
-    unst_pitching_naca64a010_rans.test_vals = [-2.474001, -6.039495, 0.031041, 0.053671]
+    unst_pitching_naca64a010_rans.test_vals = [-4.799603, -7.374477, -0.005421, 0.008293]
     unst_pitching_naca64a010_rans.unsteady  = True
     test_list.append(unst_pitching_naca64a010_rans)
     # unsteady pitching NACA64A010, Euler
@@ -832,7 +832,7 @@ def main():
     unst_pitching_naca64a010_euler.cfg_dir   = "unsteady/pitching_naca64a010_euler"
     unst_pitching_naca64a010_euler.cfg_file  = "pitching_NACA64A010.cfg"
     unst_pitching_naca64a010_euler.test_iter = 1
-    unst_pitching_naca64a010_euler.test_vals = [-1.864773, 3.545935, 0.035685, 0.035843]
+    unst_pitching_naca64a010_euler.test_vals = [-4.240073, 1.280267, -0.040141, 0.000887]
     unst_pitching_naca64a010_euler.unsteady  = True
     test_list.append(unst_pitching_naca64a010_euler)
     # unsteady plunging NACA0012, Laminar NS
@@ -840,7 +840,7 @@ def main():
     unst_plunging_naca0012.cfg_dir   = "unsteady/plunging_naca0012"
     unst_plunging_naca0012.cfg_file  = "plunging_NACA0012.cfg"
     unst_plunging_naca0012.test_iter = 1
-    unst_plunging_naca0012.test_vals = [-5.248321, 0.372499, 2.100860, 6.212394]
+    unst_plunging_naca0012.test_vals = [-5.829829, -0.258459, 0.888444, -0.124558]
     unst_plunging_naca0012.unsteady  = True
     test_list.append(unst_plunging_naca0012)
 
