@@ -304,6 +304,8 @@ jobs:
           ls -lahR $BIN_FOLDER
       - name: Run Tests in Container
         uses: docker://ghcr.io/su2code/su2/test-su2-tsan:260404-0039
+        env:
+          PMIX_MCA_gds: hash
         with:
           # -t <Tutorials-branch> -c <Testcases-branch>
           args: -b ${{github.ref}} -t develop -c develop -s ${{matrix.testscript}} -a "--tsan"
@@ -436,6 +438,8 @@ jobs:
           ls -lahR
       - name: Run Unit Tests
         uses: docker://ghcr.io/su2code/su2/test-su2:260404-0039
+        env:
+          OMPI_MCA_osc: pt2pt
         with:
           entrypoint: install/bin/${{matrix.testdriver}}
       - name: Post Cleanup
