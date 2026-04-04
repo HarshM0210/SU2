@@ -28,10 +28,6 @@
 # make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
 from __future__ import print_function
 
-import os
-os.environ["OMPI_MCA_osc"] = "pt2pt"
-os.environ["OMPI_MCA_btl"] = "self,tcp"
-
 import sys
 from TestCase import TestCase
 from TestCase import parse_args
