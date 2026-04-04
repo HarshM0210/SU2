@@ -232,7 +232,7 @@ class TestCase:
                             for j in range(len(data)):
                                 sim_vals.append( float(data[j]) )
                                 delta_vals.append( abs(float(data[j])-self.test_vals[j]) )
-                                if isintance(self.tol, list):
+                                if isinstance(self.tol, list):
                                     if delta_vals[j] > self.tol[j]:
                                         exceed_tol = True
                                         passed     = False
