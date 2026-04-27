@@ -85,7 +85,7 @@ jobs:
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
@@ -129,7 +129,7 @@ jobs:
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
@@ -168,7 +168,7 @@ jobs:
       - name: Compress binaries
         run: tar -zcvf install_bin.tgz install/*
       - name: Upload Binaries
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.config_set }}
           path: install_bin.tgz
